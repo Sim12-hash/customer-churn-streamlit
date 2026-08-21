@@ -231,10 +231,11 @@ if model is None:
 # ------------------------------------------------------------
 # Main navigation
 # ------------------------------------------------------------
-single_tab, batch_tab, logic_tab = st.tabs(
+page = st.sidebar.radio(
+    "Navigation",
     [
-        "Single Customer Assessment",
-        "Retention Priority Dashboard",
+        "Customer Assessment",
+        "Retention Dashboard",
         "Decision Logic",
     ]
 )
@@ -243,7 +244,7 @@ single_tab, batch_tab, logic_tab = st.tabs(
 # ------------------------------------------------------------
 # Tab 1: Single customer
 # ------------------------------------------------------------
-with single_tab:
+if page == "Customer Assessment":
     st.subheader("Customer Information")
     st.write(
         "Enter the customer's current profile. The model will return a churn risk "
@@ -256,18 +257,16 @@ with single_tab:
         with col1:
             gender = st.selectbox("Gender", CATEGORY_LEVELS["gender"])
             senior = st.selectbox("Senior Citizen", ["No", "Yes"])
-            partner = st.selectbox("Partner", CATEGORY_LEVELS["Partner"])
-            dependents = st.selectbox("Dependents", CATEGORY_LEVELS["Dependents"])
+            partner = "No"
+            dependents = "No"
             tenure = st.number_input(
                 "Tenure (months)", min_value=0, max_value=100, value=12, step=1
             )
             contract = st.selectbox("Contract", CATEGORY_LEVELS["Contract"])
 
         with col2:
-            phone = st.selectbox("Phone Service", CATEGORY_LEVELS["PhoneService"])
-            multiple_lines = st.selectbox(
-                "Multiple Lines", CATEGORY_LEVELS["MultipleLines"]
-            )
+            phone = "Yes"
+            multiple_lines = "No"
             internet = st.selectbox(
                 "Internet Service", CATEGORY_LEVELS["InternetService"]
             )
@@ -285,15 +284,9 @@ with single_tab:
             device_protection = st.selectbox(
                 "Device Protection", CATEGORY_LEVELS["DeviceProtection"]
             )
-            streaming_tv = st.selectbox(
-                "Streaming TV", CATEGORY_LEVELS["StreamingTV"]
-            )
-            streaming_movies = st.selectbox(
-                "Streaming Movies", CATEGORY_LEVELS["StreamingMovies"]
-            )
-            paperless = st.selectbox(
-                "Paperless Billing", CATEGORY_LEVELS["PaperlessBilling"]
-            )
+            streaming_tv = "No"
+            streaming_movies = "No"
+            paperless = "No"
             payment = st.selectbox(
                 "Payment Method", CATEGORY_LEVELS["PaymentMethod"]
             )
@@ -369,7 +362,7 @@ with single_tab:
 # ------------------------------------------------------------
 # Tab 2: Batch customer prioritisation
 # ------------------------------------------------------------
-with batch_tab:
+elif page == "Retention Dashboard":
     st.subheader("Retention Priority Dashboard")
     st.write(
         "Upload a CSV containing multiple customers. The app will score all records "
@@ -462,7 +455,7 @@ with batch_tab:
 # ------------------------------------------------------------
 # Tab 3: Decision logic
 # ------------------------------------------------------------
-with logic_tab:
+elif page == "Decision Logic":
     st.subheader("How the Application Supports Business Decisions")
 
     st.markdown(
