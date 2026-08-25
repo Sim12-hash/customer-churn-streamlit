@@ -2,7 +2,7 @@ import os
 import joblib
 import pandas as pd
 import streamlit as st
-from pathlib import Path
+
 # ------------------------------------------------------------
 # Page setup
 # ------------------------------------------------------------
@@ -12,10 +12,8 @@ st.set_page_config(
     layout="wide"
 )
 
-BASE_DIR = Path(__file__).resolve().parent
-
-MODEL_PATH = BASE_DIR / "final_churn_model.pkl"
-PORTFOLIO_PATH = BASE_DIR / "demo_customer_portfolio.csv"
+MODEL_PATH = "final_churn_model.pkl"
+PORTFOLIO_PATH = "demo_customer_portfolio.csv"
 
 
 # ------------------------------------------------------------
@@ -115,7 +113,7 @@ def load_model():
 
 @st.cache_data
 def load_portfolio():
-    if PORTFOLIO_PATH.exists():
+    if os.path.exists(PORTFOLIO_PATH):
         return pd.read_csv(PORTFOLIO_PATH)
     return None
 
@@ -325,6 +323,29 @@ if page == "🔍 Customer Risk Assessment":
 
             st.progress(score)
 
+            st.caption(
+                "Risk Score represents the model-estimated churn likelihood "
+                "based on customer characteristics. It supports prioritisation "
+                "decisions and should not be interpreted as a guaranteed outcome."
+            )
+
+            st.markdown("### Risk Level Explanation")
+
+            if level == "High":
+                st.warning(
+                    "High Risk: Customer has a higher estimated churn risk "
+                    "and should receive immediate retention attention."
+                )
+            elif level == "Medium":
+                st.info(
+                    "Medium Risk: Customer shows some churn-related characteristics "
+                    "and should be monitored through continuous engagement."
+                )
+            else:
+                st.success(
+                    "Low Risk: Customer currently shows lower estimated churn risk. "
+                    "Maintain normal service quality and engagement."
+                )
 
             st.markdown("### Customer Profile")
 
