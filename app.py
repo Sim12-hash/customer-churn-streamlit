@@ -283,7 +283,6 @@ mode = st.radio(
         key="assessment_mode"
     )
 
-
     if mode == "Existing Customer Lookup":
 
         if portfolio is None:
