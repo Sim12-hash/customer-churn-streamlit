@@ -214,7 +214,7 @@ def validate_batch_data(df):
 # ------------------------------------------------------------
 # Header
 # ------------------------------------------------------------
-st.title("Customer Churn Retention Support")
+st.title("Customer Retention Management System")
 st.caption(
     "Use churn risk scores to identify customers who may need retention attention "
     "and prioritise follow-up actions."
@@ -234,9 +234,9 @@ if model is None:
 page = st.sidebar.radio(
     "Navigation",
     [
-        "Customer Assessment",
-        "Retention Dashboard",
-        "Decision Logic",
+        "🔍 Customer Risk Assessment",
+        "📊 Retention Management Dashboard",
+        "ℹ️ Model Decision Explanation",
     ]
 )
 
@@ -245,13 +245,14 @@ page = st.sidebar.radio(
 # Tab 1: Single customer
 # ------------------------------------------------------------
 if page == "Customer Assessment":
-    st.subheader("Customer Information")
+    st.subheader("Customer Profile Assessment")
     st.write(
         "Enter the customer's current profile. The model will return a churn risk "
         "score and an operational retention priority."
     )
 
     with st.form("single_customer_form"):
+        st.markdown("### Customer Relationship")
         col1, col2, col3 = st.columns(3)
 
         with col1:
@@ -330,20 +331,20 @@ if page == "Customer Assessment":
         priority = priority_label(level)
 
         st.divider()
-        st.subheader("Customer Churn Assessment")
+        st.subheader("Customer Risk Assessment")
 
         metric1, metric2, metric3 = st.columns(3)
 
-        metric1.metric("Churn Risk Score", f"{score:.1%}")
+        metric1.metric("Risk Score", f"{score:.1%}")
         metric2.metric("Risk Level", level)
         metric3.metric("Retention Priority", priority)
 
         st.progress(min(max(score, 0.0), 1.0))
 
-        st.markdown("### Recommended Retention Action")
+        st.markdown("### Retention Recommendation")
         st.write(recommended_action(level))
 
-        st.markdown("### Customer Risk Profile")
+        st.markdown("### Customer Risk Indicators")
         st.caption(
             "These profile flags are simple business rules for interpretation. "
             "They are not model feature explanations and do not prove causality."
@@ -412,7 +413,7 @@ elif page == "Retention Dashboard":
             m3.metric("Medium Risk", medium_count)
             m4.metric("Low Risk", low_count)
 
-            st.markdown("### Risk Distribution")
+            st.markdown("### Customer Risk Overview")
             distribution = (
                 results["RiskLevel"]
                 .value_counts()
@@ -478,6 +479,8 @@ elif page == "Decision Logic":
         **5. Recommended action**  
         The application suggests the type of retention response that employees can
         consider for each risk level.
+
+        **User-friendly design principle:** reduce unnecessary input requirements while maintaining the model workflow.
 
         **Business objective:** identify customers who may leave early enough for the
         company to prioritise retention resources more efficiently.
