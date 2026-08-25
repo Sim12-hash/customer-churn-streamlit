@@ -506,96 +506,91 @@ if page == "🔍 Customer Risk Assessment":
 
 
 # ------------------------------------------------------------
-# Page 2
+# Page 2: Retention Management Dashboard (CLO2 Optimized)
 # ------------------------------------------------------------
 
 elif page == "📊 Retention Management Dashboard":
 
-    st.subheader(
-        "Retention Management Dashboard"
-    )
-
+    st.subheader("Retention Management Dashboard")
 
     if portfolio is None:
-
-        st.error(
-            "demo_customer_portfolio.csv not found."
-        )
-
+        st.error("⚠️ The customer portfolio dataset (demo_customer_portfolio.csv) is currently unavailable.")
     else:
-
         results = portfolio.copy()
-
         encoded = prepare_input(results)
-
         scores = model.predict_proba(encoded)[:,1]
 
         results["ChurnRiskScore"] = scores
+        results["RiskLevel"] = results["ChurnRiskScore"].apply(risk_level)
+        results["RetentionPriority"] = results["RiskLevel"].apply(priority)
 
-        results["RiskLevel"] = (
-            results["ChurnRiskScore"]
-            .apply(risk_level)
-        )
+        # High-level Metrics with Business Focus
+        a, b, c, d = st.columns(4)
+        a.metric("Total Customers Evaluated", len(results))
+        b.metric("High Risk (Priority 1)", sum(results["RiskLevel"]=="High"))
+        c.metric("Medium Risk (Priority 2)", sum(results["RiskLevel"]=="Medium"))
+        d.metric("Low Risk (Priority 3)", sum(results["RiskLevel"]=="Low"))
 
-        results["RetentionPriority"] = (
-            results["RiskLevel"]
-            .apply(priority)
-        )
+        st.divider()
+        st.markdown("### 📈 Customer Journey & Business Insights")
+        
+        # Interactive Tabs for Business Intelligence
+        tab1, tab2, tab3 = st.tabs(["📋 Contract Strategies", "💰 Financial Health", "⏳ Customer Journey"])
 
+        with tab1:
+            fig1 = px.histogram(
+                results, 
+                x="RiskLevel", 
+                color="Contract", 
+                barmode="group",
+                category_orders={"RiskLevel": ["High", "Medium", "Low"]},
+                title="Risk Distribution by Contract Type",
+                color_discrete_sequence=px.colors.qualitative.Pastel
+            )
+            fig1.update_layout(yaxis_title="Customer Count")
+            st.plotly_chart(fig1, use_container_width=True)
+            st.caption("💡 **Retention Strategy:** Month-to-month contracts dominate the high-risk segment. Consider proactive engagement campaigns offering loyalty incentives to transition these users to secure, long-term annual plans.")
 
-        a,b,c,d = st.columns(4)
+        with tab2:
+            fig2 = px.box(
+                results, 
+                x="RiskLevel", 
+                y="MonthlyCharges", 
+                color="RiskLevel",
+                category_orders={"RiskLevel": ["High", "Medium", "Low"]},
+                title="Monthly Expenditure vs. Churn Vulnerability",
+                color_discrete_map={"High": "#EF553B", "Medium": "#66C2A5", "Low": "#8DA0CB"}
+            )
+            st.plotly_chart(fig2, use_container_width=True)
+            st.caption("💡 **Financial Insight:** High-risk customers generally exhibit higher monthly charges. A personalized pricing review, flexible payment options, or a complimentary service upgrade might alleviate immediate churn pressures.")
 
-        a.metric(
-            "Customers Analysed",
-            len(results)
-        )
+        with tab3:
+            fig3 = px.scatter(
+                results, 
+                x="tenure", 
+                y="ChurnRiskScore", 
+                color="RiskLevel",
+                size="MonthlyCharges",
+                hover_data=["customerID", "Contract"],
+                title="Customer Tenure vs. Risk Score (Bubble Size: Monthly Charges)",
+                category_orders={"RiskLevel": ["High", "Medium", "Low"]},
+                color_discrete_map={"High": "#EF553B", "Medium": "#66C2A5", "Low": "#8DA0CB"}
+            )
+            fig3.add_hline(y=0.70, line_dash="dash", line_color="red", annotation_text="High Risk Threshold")
+            st.plotly_chart(fig3, use_container_width=True)
+            st.caption("💡 **Customer Success Insight:** Churn probability peaks heavily during the initial 12 months. Enhancing the onboarding experience and providing dedicated tech support during this critical window is vital for long-term loyalty.")
 
-        b.metric(
-            "High Risk",
-            sum(results["RiskLevel"]=="High")
-        )
-
-        c.metric(
-            "Medium Risk",
-            sum(results["RiskLevel"]=="Medium")
-        )
-
-        d.metric(
-            "Low Risk",
-            sum(results["RiskLevel"]=="Low")
-        )
-
-
-        st.bar_chart(
-            results["RiskLevel"]
-            .value_counts()
-        )
-
-
-        st.markdown(
-            "### Priority Customer List"
-        )
-
-
+        st.divider()
+        st.markdown("### 🎯 Priority Intervention Roster")
+        st.caption("Focus your dedicated customer success efforts on the individuals below, sorted by immediate risk severity to maximize retention ROI.")
+        
         st.dataframe(
             results[
-                [
-                    "customerID",
-                    "ChurnRiskScore",
-                    "RiskLevel",
-                    "RetentionPriority",
-                    "Contract",
-                    "tenure",
-                    "MonthlyCharges"
-                ]
-            ]
-            .sort_values(
-                "ChurnRiskScore",
-                ascending=False
-            ),
-            hide_index=True
+                ["customerID", "ChurnRiskScore", "RiskLevel", "RetentionPriority", "Contract", "tenure", "MonthlyCharges"]
+            ].sort_values("ChurnRiskScore", ascending=False),
+            hide_index=True,
+            use_container_width=True
         )
-
 
 # ------------------------------------------------------------
 # Page 3
