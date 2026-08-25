@@ -268,7 +268,7 @@ page = st.sidebar.radio(
 
 
 # ------------------------------------------------------------
-# Page 1: Customer Risk Assessment (UI/UX & Profile Optimized)
+# Page 1: Customer Risk Assessment (UI/UX, Profile & Session State Optimized)
 # ------------------------------------------------------------
 
 if page == "🔍 Customer Risk Assessment":
@@ -293,18 +293,26 @@ if page == "🔍 Customer Risk Assessment":
             st.error("demo_customer_portfolio.csv not found.")
             st.stop()
 
-        customer_id = st.selectbox("Select Customer ID", portfolio["customerID"])
+        # [FIX] Bind selectbox to session_state to persist selection across page navigations
+        if "dropdown_cust_id" not in st.session_state:
+            st.session_state["dropdown_cust_id"] = portfolio["customerID"].iloc[0]
+
+        customer_id = st.selectbox("Select Customer ID", portfolio["customerID"], key="dropdown_cust_id")
 
         if st.button("Analyse Customer", type="primary"):
-
+            # Save analysis flag and data to session state
+            st.session_state["analyzed_cust_id"] = customer_id
             customer = portfolio[portfolio["customerID"] == customer_id].iloc[0].to_dict()
             st.session_state["selected_customer"] = customer
             st.session_state["selected_score"], st.session_state["selected_level"] = predict_customer(customer)
 
+        # [FIX] Render UI as long as the current dropdown matches the analyzed ID
+        if st.session_state.get("analyzed_cust_id") == customer_id and "selected_customer" in st.session_state:
+            
+            customer = st.session_state["selected_customer"]
             score = st.session_state["selected_score"]
             level = st.session_state["selected_level"]
 
-         
             c1, c2, c3 = st.columns(3)
             c1.metric("Churn Risk Score", f"{score:.1%}", help="Estimated probability of the customer churning within the next billing cycle.")
             c2.metric("Risk Level", level, help="Categorized as High (>=70%), Medium (40%-69%), or Low (<40%).")
@@ -312,7 +320,6 @@ if page == "🔍 Customer Risk Assessment":
 
             st.progress(score)
 
-            
             st.markdown("### 👤 360° Customer Profile")
             p1, p2, p3, p4 = st.columns(4)
 
@@ -342,7 +349,6 @@ if page == "🔍 Customer Risk Assessment":
                 st.write(f"**Security:** {customer.get('OnlineSecurity', '-')}")
                 st.write(f"**Backup:** {customer.get('OnlineBackup', '-')}")
 
-           
             st.markdown("### ⚠️ Key Risk Factors")
             indicators = risk_indicators(customer)
             if indicators:
@@ -358,7 +364,7 @@ if page == "🔍 Customer Risk Assessment":
                 st.success(f"**Current Status:** {recommendation(level)}")
 
     else:
-        st.info("Adjust customer attributes below to simulate potential changes in their churn risk score.")
+        st.info("Adjust the actionable business levers below to simulate how targeted retention offers might reduce the customer's churn risk.")
 
         if portfolio is None:
             st.error("Customer portfolio unavailable.")
@@ -372,6 +378,14 @@ if page == "🔍 Customer Risk Assessment":
         current_score, current_level = predict_customer(base_customer)
 
         st.metric("Current Churn Risk", f"{current_score:.1%}")
+
+        # [BUSINESS LOGIC EXPLANATION] Explaining why only 4 filters exist
+        with st.expander("ℹ️ Why only these four attributes? (Actionable Levers)"):
+            st.write(
+                "In commercial churn management, we can only manipulate **Actionable Business Levers**. "
+                "While demographic attributes (e.g., Senior Citizen status) and historical data (e.g., Tenure) heavily influence churn, they cannot be altered by a business strategy. "
+                "Therefore, this simulation specifically focuses on service upgrades (Tech Support, Security), contract negotiations, and payment methods—the exact elements a customer success team can offer as incentives to retain the user."
+            )
 
         scenario_customer = base_customer.copy()
 
@@ -393,7 +407,6 @@ if page == "🔍 Customer Risk Assessment":
             c1.metric("Original Risk", f"{current_score:.1%}")
             c2.metric("Simulated Risk", f"{scenario_score:.1%}")
             c3.metric("Risk Delta", f"{scenario_score-current_score:+.1%}", delta_color="inverse")
-
 
 # ------------------------------------------------------------
 # Page 2: Retention Management Dashboard (CLO2 Optimized)
