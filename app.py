@@ -270,13 +270,17 @@ if page == "🔍 Customer Risk Assessment":
 
     st.subheader("Customer Risk Assessment")
 
-    mode = st.radio(
+    if "assessment_mode" not in st.session_state:
+        st.session_state["assessment_mode"] = "Existing Customer Lookup"
+
+mode = st.radio(
         "Assessment Mode",
         [
             "Existing Customer Lookup",
             "What-if Scenario Analysis"
         ],
-        horizontal=True
+        horizontal=True,
+        key="assessment_mode"
     )
 
 
@@ -385,11 +389,12 @@ if page == "🔍 Customer Risk Assessment":
 
             st.markdown("### Customer Risk Indicators")
 
-            st.caption(
-                "Risk indicators highlight customer characteristics associated "
-                "with higher churn risk. They describe customer patterns and "
-                "do not represent direct causes of churn."
-            )
+            with st.expander("ⓘ Understanding Risk Indicators"):
+                st.write(
+                    "Risk indicators highlight customer characteristics associated "
+                    "with higher churn risk. They describe customer patterns and "
+                    "do not represent direct causes of churn."
+                )
 
             for item in risk_indicators(customer):
                 st.write("• " + item)
