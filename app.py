@@ -115,7 +115,7 @@ def load_model():
 
 @st.cache_data
 def load_portfolio():
-    if os.path.exists(PORTFOLIO_PATH):
+    if PORTFOLIO_PATH.exists():
         return pd.read_csv(PORTFOLIO_PATH)
     return None
 
