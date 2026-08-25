@@ -2,7 +2,6 @@ import os
 import joblib
 import pandas as pd
 import streamlit as st
-from pathlib import Path
 
 # ------------------------------------------------------------
 # Page setup
@@ -13,10 +12,9 @@ st.set_page_config(
     layout="wide"
 )
 
-BASE_DIR = Path(__file__).resolve().parent
+MODEL_PATH = "final_churn_model.pkl"
+PORTFOLIO_PATH = "demo_customer_portfolio.csv"
 
-MODEL_PATH = BASE_DIR / "final_churn_model.pkl"
-PORTFOLIO_PATH = BASE_DIR / "demo_customer_portfolio.csv"
 
 # ------------------------------------------------------------
 # Feature configuration
@@ -115,7 +113,7 @@ def load_model():
 
 @st.cache_data
 def load_portfolio():
-    if PORTFOLIO_PATH.exists():
+    if os.path.exists(PORTFOLIO_PATH):
         return pd.read_csv(PORTFOLIO_PATH)
     return None
 
@@ -134,6 +132,11 @@ def prepare_input(raw_df):
 
     for col in ["SeniorCitizen", "tenure", "MonthlyCharges", "TotalCharges"]:
         data[col] = pd.to_numeric(data[col], errors="coerce")
+
+    # Handle missing numerical values before model prediction
+    # Required because Gradient Boosting does not accept NaN values
+    for col in ["SeniorCitizen", "tenure", "MonthlyCharges", "TotalCharges"]:
+        data[col] = data[col].fillna(data[col].median())
 
     for col, levels in CATEGORY_LEVELS.items():
         data[col] = pd.Categorical(
@@ -352,107 +355,101 @@ if page == "🔍 Customer Risk Assessment":
     else:
 
         st.info(
-            "Use this mode to test different customer scenarios."
+            "Modify selected customer attributes to explore how the estimated churn risk may change."
         )
 
-        customer = {}
+        if portfolio is None:
+            st.error("Customer portfolio unavailable.")
+            st.stop()
+
+        customer_id = st.selectbox(
+            "Select Customer for Scenario Analysis",
+            portfolio["customerID"]
+        )
+
+        base_customer = portfolio[
+            portfolio["customerID"] == customer_id
+        ].iloc[0].to_dict()
+
+        st.markdown("### Current Customer Profile")
+
+        current_score, current_level = predict_customer(base_customer)
+
+        st.metric(
+            "Current Churn Risk",
+            f"{current_score:.1%}"
+        )
+
+        scenario_customer = base_customer.copy()
+
+        st.markdown("### Modify Customer Scenario")
 
         col1, col2 = st.columns(2)
 
         with col1:
-
-            customer["gender"] = st.selectbox(
-                "Gender",
-                CATEGORY_LEVELS["gender"]
+            scenario_customer["Contract"] = st.selectbox(
+                "Scenario Contract",
+                CATEGORY_LEVELS["Contract"],
+                index=CATEGORY_LEVELS["Contract"].index(
+                    base_customer["Contract"]
+                )
             )
 
-            customer["SeniorCitizen"] = (
-                1 if st.selectbox(
-                    "Senior Citizen",
-                    ["No","Yes"]
-                ) == "Yes"
-                else 0
+            scenario_customer["TechSupport"] = st.selectbox(
+                "Scenario Tech Support",
+                CATEGORY_LEVELS["TechSupport"],
+                index=CATEGORY_LEVELS["TechSupport"].index(
+                    base_customer["TechSupport"]
+                )
             )
-
-            customer["tenure"] = st.number_input(
-                "Tenure",
-                0,
-                100,
-                12
-            )
-
-            customer["Contract"] = st.selectbox(
-                "Contract",
-                CATEGORY_LEVELS["Contract"]
-            )
-
-            customer["InternetService"] = st.selectbox(
-                "Internet Service",
-                CATEGORY_LEVELS["InternetService"]
-            )
-
 
         with col2:
-
-            customer["PaymentMethod"] = st.selectbox(
-                "Payment Method",
-                CATEGORY_LEVELS["PaymentMethod"]
+            scenario_customer["OnlineSecurity"] = st.selectbox(
+                "Scenario Online Security",
+                CATEGORY_LEVELS["OnlineSecurity"],
+                index=CATEGORY_LEVELS["OnlineSecurity"].index(
+                    base_customer["OnlineSecurity"]
+                )
             )
 
-            customer["MonthlyCharges"] = st.number_input(
-                "Monthly Charges",
-                0.0,
-                200.0,
-                70.0
-            )
-
-            customer["TotalCharges"] = st.number_input(
-                "Total Charges",
-                0.0,
-                10000.0,
-                840.0
-            )
-
-            customer["OnlineSecurity"] = st.selectbox(
-                "Online Security",
-                CATEGORY_LEVELS["OnlineSecurity"]
-            )
-
-            customer["TechSupport"] = st.selectbox(
-                "Tech Support",
-                CATEGORY_LEVELS["TechSupport"]
+            scenario_customer["PaymentMethod"] = st.selectbox(
+                "Scenario Payment Method",
+                CATEGORY_LEVELS["PaymentMethod"],
+                index=CATEGORY_LEVELS["PaymentMethod"].index(
+                    base_customer["PaymentMethod"]
+                )
             )
 
 
-        # hidden default attributes
-        customer.update(
-            {
-                "Partner":"No",
-                "Dependents":"No",
-                "PhoneService":"Yes",
-                "MultipleLines":"No",
-                "OnlineBackup":"No",
-                "DeviceProtection":"No",
-                "StreamingTV":"No",
-                "StreamingMovies":"No",
-                "PaperlessBilling":"No"
-            }
-        )
+        if st.button("Compare Scenario Risk"):
 
-
-        if st.button("Calculate Scenario Risk"):
-
-            score, level = predict_customer(customer)
-
-            st.metric(
-                "Estimated Churn Risk",
-                f"{score:.1%}"
+            scenario_score, scenario_level = predict_customer(
+                scenario_customer
             )
 
-            st.write(
-                "Risk Level:",
-                level
+            c1, c2, c3 = st.columns(3)
+
+            c1.metric(
+                "Original Risk",
+                f"{current_score:.1%}"
             )
+
+            c2.metric(
+                "Scenario Risk",
+                f"{scenario_score:.1%}"
+            )
+
+            c3.metric(
+                "Risk Difference",
+                f"{scenario_score-current_score:+.1%}"
+            )
+
+            st.info(
+                "Scenario analysis shows how the model's estimated risk score changes "
+                "under different customer profile assumptions. It should not be interpreted "
+                "as a guaranteed causal impact."
+            )
+
 
 
 # ------------------------------------------------------------
