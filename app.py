@@ -273,7 +273,7 @@ if page == "🔍 Customer Risk Assessment":
     if "assessment_mode" not in st.session_state:
         st.session_state["assessment_mode"] = "Existing Customer Lookup"
 
-mode = st.radio(
+    mode = st.radio(
         "Assessment Mode",
         [
             "Existing Customer Lookup",
