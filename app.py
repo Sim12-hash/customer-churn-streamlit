@@ -301,8 +301,11 @@ if page == "🔍 Customer Risk Assessment":
                 portfolio["customerID"] == customer_id
             ].iloc[0].to_dict()
 
+            st.session_state["selected_customer"] = customer
+            st.session_state["selected_score"], st.session_state["selected_level"] = predict_customer(customer)
 
-            score, level = predict_customer(customer)
+            score = st.session_state["selected_score"]
+            level = st.session_state["selected_level"]
 
 
             c1, c2, c3 = st.columns(3)
@@ -320,6 +323,12 @@ if page == "🔍 Customer Risk Assessment":
             c3.metric(
                 "Retention Priority",
                 priority(level)
+            )
+
+            st.caption(
+                "Priority 1: Immediate retention attention required. "
+                "Priority 2: Continue monitoring and engagement. "
+                "Priority 3: Maintain normal customer relationship."
             )
 
 
@@ -351,20 +360,36 @@ if page == "🔍 Customer Risk Assessment":
 
             st.markdown("### Customer Profile")
 
-            display = pd.DataFrame(
-                {
-                    "Attribute": list(customer.keys()),
-                    "Value": list(customer.values())
-                }
-            )
+            st.markdown("### Customer Profile")
 
-            st.dataframe(
-                display,
-                hide_index=True
-            )
+            p1, p2, p3 = st.columns(3)
+
+            with p1:
+                st.markdown("**Customer Information**")
+                st.write("Customer ID:", customer.get("customerID", "-"))
+                st.write("Tenure:", customer.get("tenure", "-"), "months")
+                st.write("Contract:", customer.get("Contract", "-"))
+
+            with p2:
+                st.markdown("**Service Information**")
+                st.write("Internet:", customer.get("InternetService", "-"))
+                st.write("Tech Support:", customer.get("TechSupport", "-"))
+                st.write("Online Security:", customer.get("OnlineSecurity", "-"))
+
+            with p3:
+                st.markdown("**Financial Information**")
+                st.write("Monthly Charges:", customer.get("MonthlyCharges", "-"))
+                st.write("Total Charges:", customer.get("TotalCharges", "-"))
+                st.write("Payment:", customer.get("PaymentMethod", "-"))
 
 
             st.markdown("### Customer Risk Indicators")
+
+            st.caption(
+                "Risk indicators highlight customer characteristics associated "
+                "with higher churn risk. They describe customer patterns and "
+                "do not represent direct causes of churn."
+            )
 
             for item in risk_indicators(customer):
                 st.write("• " + item)
@@ -387,14 +412,13 @@ if page == "🔍 Customer Risk Assessment":
             st.error("Customer portfolio unavailable.")
             st.stop()
 
-        customer_id = st.selectbox(
-            "Select Customer for Scenario Analysis",
-            portfolio["customerID"]
-        )
+        if "selected_customer" not in st.session_state:
+            st.warning(
+                "Please analyse a customer first before running scenario analysis."
+            )
+            st.stop()
 
-        base_customer = portfolio[
-            portfolio["customerID"] == customer_id
-        ].iloc[0].to_dict()
+        base_customer = st.session_state["selected_customer"]
 
         st.markdown("### Current Customer Profile")
 
