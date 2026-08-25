@@ -130,23 +130,26 @@ portfolio = load_portfolio()
 # ------------------------------------------------------------
 
 def prepare_input(raw_df):
-
     data = raw_df.copy()
 
+    # 1. Enforce numeric data types
     for col in ["SeniorCitizen", "tenure", "MonthlyCharges", "TotalCharges"]:
         data[col] = pd.to_numeric(data[col], errors="coerce")
 
-    # Handle missing numerical values before model prediction
-    # Required because Gradient Boosting does not accept NaN values
+    # 2. Strict alignment with training data preprocessing (Data Quality Assurance)
+    # In the training environment, missing 'TotalCharges' were imputed with 0.
+    # Maintaining exact consistency here prevents runtime errors during single-customer predictions.
     for col in ["SeniorCitizen", "tenure", "MonthlyCharges", "TotalCharges"]:
-        data[col] = data[col].fillna(data[col].median())
+        data[col] = data[col].fillna(0)
 
+    # 3. Align categorical levels to prevent unexpected encoding shifts
     for col, levels in CATEGORY_LEVELS.items():
         data[col] = pd.Categorical(
             data[col],
             categories=levels
         )
 
+    # 4. Apply One-Hot Encoding matching the baseline pipeline
     encoded = pd.get_dummies(
         data[RAW_REQUIRED_COLUMNS],
         columns=list(CATEGORY_LEVELS.keys()),
@@ -154,6 +157,7 @@ def prepare_input(raw_df):
         dtype=int
     )
 
+    # 5. Guarantee feature dimensions strictly match the trained model's expectations
     encoded = encoded.reindex(
         columns=EXPECTED_FEATURES,
         fill_value=0
