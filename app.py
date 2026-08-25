@@ -7,14 +7,20 @@ import streamlit as st
 # Page setup
 # ------------------------------------------------------------
 st.set_page_config(
-    page_title="Customer Churn Retention Support",
+    page_title="Customer Retention Management System",
     page_icon="📊",
     layout="wide"
 )
 
 MODEL_PATH = "final_churn_model.pkl"
+PORTFOLIO_PATH = "demo_customer_portfolio.csv"
 
-# These are the exact feature columns used by the notebook after pd.get_dummies(drop_first=True).
+
+# ------------------------------------------------------------
+# Feature configuration
+# Same structure as notebook preprocessing
+# ------------------------------------------------------------
+
 EXPECTED_FEATURES = [
     "SeniorCitizen",
     "tenure",
@@ -48,6 +54,7 @@ EXPECTED_FEATURES = [
     "PaymentMethod_Mailed check",
 ]
 
+
 CATEGORY_LEVELS = {
     "gender": ["Female", "Male"],
     "Partner": ["No", "Yes"],
@@ -70,6 +77,7 @@ CATEGORY_LEVELS = {
         "Mailed check",
     ],
 }
+
 
 RAW_REQUIRED_COLUMNS = [
     "gender",
@@ -95,45 +103,53 @@ RAW_REQUIRED_COLUMNS = [
 
 
 # ------------------------------------------------------------
-# Model loading
+# Load resources
 # ------------------------------------------------------------
+
 @st.cache_resource
 def load_model():
-    if not os.path.exists(MODEL_PATH):
-        return None
     return joblib.load(MODEL_PATH)
 
 
+@st.cache_data
+def load_portfolio():
+    if os.path.exists(PORTFOLIO_PATH):
+        return pd.read_csv(PORTFOLIO_PATH)
+    return None
+
+
 model = load_model()
+portfolio = load_portfolio()
 
 
 # ------------------------------------------------------------
-# Data preparation
+# Processing functions
 # ------------------------------------------------------------
+
 def prepare_input(raw_df):
-    """
-    Convert raw customer fields into the same dummy-variable structure
-    used by the training notebook.
-    """
+
     data = raw_df.copy()
 
-    # Standardise numeric fields.
     for col in ["SeniorCitizen", "tenure", "MonthlyCharges", "TotalCharges"]:
         data[col] = pd.to_numeric(data[col], errors="coerce")
 
-    # Use fixed category levels so pd.get_dummies creates the same baseline
-    # categories as the notebook.
     for col, levels in CATEGORY_LEVELS.items():
-        data[col] = pd.Categorical(data[col], categories=levels)
+        data[col] = pd.Categorical(
+            data[col],
+            categories=levels
+        )
 
     encoded = pd.get_dummies(
         data[RAW_REQUIRED_COLUMNS],
         columns=list(CATEGORY_LEVELS.keys()),
         drop_first=True,
-        dtype=int,
+        dtype=int
     )
 
-    encoded = encoded.reindex(columns=EXPECTED_FEATURES, fill_value=0)
+    encoded = encoded.reindex(
+        columns=EXPECTED_FEATURES,
+        fill_value=0
+    )
 
     return encoded
 
@@ -141,354 +157,424 @@ def prepare_input(raw_df):
 def risk_level(score):
     if score >= 0.70:
         return "High"
-    if score >= 0.40:
+    elif score >= 0.40:
         return "Medium"
     return "Low"
 
 
-def priority_label(level):
-    if level == "High":
-        return "Priority 1"
-    if level == "Medium":
-        return "Priority 2"
-    return "Priority 3"
+def priority(level):
+    return {
+        "High": "Priority 1",
+        "Medium": "Priority 2",
+        "Low": "Priority 3"
+    }[level]
 
 
-def recommended_action(level):
+def recommendation(level):
     if level == "High":
         return (
-            "Contact the customer promptly, review service concerns and current "
-            "package fit, and consider a targeted retention incentive."
+            "Contact customer promptly, review service concerns, "
+            "and consider a targeted retention offer."
         )
+
     if level == "Medium":
         return (
-            "Use proactive engagement, review the customer's service package and "
-            "monitor for additional signs of churn risk."
+            "Maintain engagement, review service satisfaction, "
+            "and monitor future churn signals."
         )
+
     return (
-        "No immediate retention intervention is required. Maintain normal service "
-        "quality and loyalty engagement."
+        "Maintain normal service quality and continue loyalty engagement."
     )
 
 
-def build_profile_flags(customer):
-    """
-    Simple business profile flags.
-    These are not model explanations and should not be treated as causal factors.
-    """
-    flags = []
+def risk_indicators(customer):
+
+    indicators = []
 
     if customer["Contract"] == "Month-to-month":
-        flags.append("Month-to-month contract")
+        indicators.append("Month-to-month contract")
 
     if float(customer["tenure"]) < 12:
-        flags.append("Short customer tenure")
+        indicators.append("Short customer tenure")
 
     if float(customer["MonthlyCharges"]) >= 80:
-        flags.append("Relatively high monthly charges")
+        indicators.append("Relatively high monthly charges")
 
     if customer["PaymentMethod"] == "Electronic check":
-        flags.append("Electronic check payment method")
+        indicators.append("Electronic check payment")
 
     if customer["TechSupport"] == "No":
-        flags.append("No technical support service")
+        indicators.append("No technical support service")
 
-    if customer["OnlineSecurity"] == "No":
-        flags.append("No online security service")
+    if not indicators:
+        indicators.append(
+            "No major profile indicator identified"
+        )
 
-    if not flags:
-        flags.append("No major profile flag triggered by the current business rules")
-
-    return flags
+    return indicators
 
 
-def validate_batch_data(df):
-    missing = [col for col in RAW_REQUIRED_COLUMNS if col not in df.columns]
+def predict_customer(customer):
 
-    if missing:
-        return False, f"Missing required columns: {', '.join(missing)}"
+    df = pd.DataFrame([customer])
 
-    return True, ""
+    encoded = prepare_input(df)
+
+    score = float(
+        model.predict_proba(encoded)[0,1]
+    )
+
+    level = risk_level(score)
+
+    return score, level
 
 
 # ------------------------------------------------------------
 # Header
 # ------------------------------------------------------------
+
 st.title("Customer Retention Management System")
+
 st.caption(
-    "Use churn risk scores to identify customers who may need retention attention "
-    "and prioritise follow-up actions."
+    "Identify customers with higher churn risk and support retention decisions."
 )
 
-if model is None:
-    st.error(
-        "Model file not found. Place `final_churn_model.pkl` in the same GitHub "
-        "folder as `app.py`, then restart the app."
-    )
-    st.stop()
-
 
 # ------------------------------------------------------------
-# Main navigation
+# Navigation
 # ------------------------------------------------------------
+
 page = st.sidebar.radio(
     "Navigation",
     [
         "🔍 Customer Risk Assessment",
         "📊 Retention Management Dashboard",
-        "ℹ️ Model Decision Explanation",
+        "ℹ️ Model Explanation"
     ]
 )
 
 
 # ------------------------------------------------------------
-# Tab 1: Single customer
+# Page 1
 # ------------------------------------------------------------
-if page == "Customer Assessment":
-    st.subheader("Customer Profile Assessment")
-    st.write(
-        "Enter the customer's current profile. The model will return a churn risk "
-        "score and an operational retention priority."
+
+if page == "🔍 Customer Risk Assessment":
+
+    st.subheader("Customer Risk Assessment")
+
+    mode = st.radio(
+        "Assessment Mode",
+        [
+            "Existing Customer Lookup",
+            "What-if Scenario Analysis"
+        ],
+        horizontal=True
     )
 
-    with st.form("single_customer_form"):
-        st.markdown("### Customer Relationship")
-        col1, col2, col3 = st.columns(3)
 
-        with col1:
-            gender = st.selectbox("Gender", CATEGORY_LEVELS["gender"])
-            senior = st.selectbox("Senior Citizen", ["No", "Yes"])
-            partner = "No"
-            dependents = "No"
-            tenure = st.number_input(
-                "Tenure (months)", min_value=0, max_value=100, value=12, step=1
+    if mode == "Existing Customer Lookup":
+
+        if portfolio is None:
+            st.error(
+                "demo_customer_portfolio.csv not found."
             )
-            contract = st.selectbox("Contract", CATEGORY_LEVELS["Contract"])
+            st.stop()
 
-        with col2:
-            phone = "Yes"
-            multiple_lines = "No"
-            internet = st.selectbox(
-                "Internet Service", CATEGORY_LEVELS["InternetService"]
-            )
-            online_security = st.selectbox(
-                "Online Security", CATEGORY_LEVELS["OnlineSecurity"]
-            )
-            online_backup = st.selectbox(
-                "Online Backup", CATEGORY_LEVELS["OnlineBackup"]
-            )
-            tech_support = st.selectbox(
-                "Tech Support", CATEGORY_LEVELS["TechSupport"]
-            )
 
-        with col3:
-            device_protection = st.selectbox(
-                "Device Protection", CATEGORY_LEVELS["DeviceProtection"]
-            )
-            streaming_tv = "No"
-            streaming_movies = "No"
-            paperless = "No"
-            payment = st.selectbox(
-                "Payment Method", CATEGORY_LEVELS["PaymentMethod"]
-            )
-            monthly = st.number_input(
-                "Monthly Charges", min_value=0.0, value=70.0, step=1.0
-            )
-            total = st.number_input(
-                "Total Charges", min_value=0.0, value=840.0, step=10.0
-            )
-
-        submitted = st.form_submit_button("Analyse Customer")
-
-    if submitted:
-        customer = {
-            "gender": gender,
-            "SeniorCitizen": 1 if senior == "Yes" else 0,
-            "Partner": partner,
-            "Dependents": dependents,
-            "tenure": tenure,
-            "PhoneService": phone,
-            "MultipleLines": multiple_lines,
-            "InternetService": internet,
-            "OnlineSecurity": online_security,
-            "OnlineBackup": online_backup,
-            "DeviceProtection": device_protection,
-            "TechSupport": tech_support,
-            "StreamingTV": streaming_tv,
-            "StreamingMovies": streaming_movies,
-            "Contract": contract,
-            "PaperlessBilling": paperless,
-            "PaymentMethod": payment,
-            "MonthlyCharges": monthly,
-            "TotalCharges": total,
-        }
-
-        customer_df = pd.DataFrame([customer])
-        encoded_customer = prepare_input(customer_df)
-
-        score = float(model.predict_proba(encoded_customer)[0, 1])
-        level = risk_level(score)
-        priority = priority_label(level)
-
-        st.divider()
-        st.subheader("Customer Risk Assessment")
-
-        metric1, metric2, metric3 = st.columns(3)
-
-        metric1.metric("Risk Score", f"{score:.1%}")
-        metric2.metric("Risk Level", level)
-        metric3.metric("Retention Priority", priority)
-
-        st.progress(min(max(score, 0.0), 1.0))
-
-        st.markdown("### Retention Recommendation")
-        st.write(recommended_action(level))
-
-        st.markdown("### Customer Risk Indicators")
-        st.caption(
-            "These profile flags are simple business rules for interpretation. "
-            "They are not model feature explanations and do not prove causality."
-        )
-
-        for item in build_profile_flags(customer):
-            st.write(f"• {item}")
-
-        st.info(
-            "The churn risk score is used for prioritisation. Because the model was "
-            "trained with class-balancing methods, the score should not automatically "
-            "be interpreted as a perfectly calibrated real-world probability."
+        customer_id = st.selectbox(
+            "Select Customer ID",
+            portfolio["customerID"]
         )
 
 
-# ------------------------------------------------------------
-# Tab 2: Batch customer prioritisation
-# ------------------------------------------------------------
-elif page == "Retention Dashboard":
-    st.subheader("Retention Priority Dashboard")
-    st.write(
-        "Upload a CSV containing multiple customers. The app will score all records "
-        "and create a prioritised retention list."
-    )
+        if st.button("Analyse Customer"):
 
-    uploaded_file = st.file_uploader(
-        "Upload customer CSV",
-        type=["csv"],
-        help="Use the same raw column names shown in the provided batch template.",
-    )
+            customer = portfolio[
+                portfolio["customerID"] == customer_id
+            ].iloc[0].to_dict()
 
-    if uploaded_file is not None:
-        batch_df = pd.read_csv(uploaded_file)
 
-        valid, message = validate_batch_data(batch_df)
+            score, level = predict_customer(customer)
 
-        if not valid:
-            st.error(message)
-        else:
-            encoded_batch = prepare_input(batch_df)
-            scores = model.predict_proba(encoded_batch)[:, 1]
 
-            results = batch_df.copy()
-            results["ChurnRiskScore"] = scores
-            results["RiskLevel"] = results["ChurnRiskScore"].apply(risk_level)
-            results["RetentionPriority"] = results["RiskLevel"].apply(priority_label)
-            results["RecommendedAction"] = results["RiskLevel"].apply(
-                recommended_action
+            c1, c2, c3 = st.columns(3)
+
+            c1.metric(
+                "Churn Risk Score",
+                f"{score:.1%}"
             )
 
-            level_order = {"High": 0, "Medium": 1, "Low": 2}
-            results["_risk_order"] = results["RiskLevel"].map(level_order)
-            results = results.sort_values(
-                ["_risk_order", "ChurnRiskScore"],
-                ascending=[True, False],
-            ).drop(columns=["_risk_order"])
-
-            total_customers = len(results)
-            high_count = int((results["RiskLevel"] == "High").sum())
-            medium_count = int((results["RiskLevel"] == "Medium").sum())
-            low_count = int((results["RiskLevel"] == "Low").sum())
-
-            m1, m2, m3, m4 = st.columns(4)
-            m1.metric("Customers Analysed", total_customers)
-            m2.metric("High Risk", high_count)
-            m3.metric("Medium Risk", medium_count)
-            m4.metric("Low Risk", low_count)
-
-            st.markdown("### Customer Risk Overview")
-            distribution = (
-                results["RiskLevel"]
-                .value_counts()
-                .reindex(["High", "Medium", "Low"], fill_value=0)
+            c2.metric(
+                "Risk Level",
+                level
             )
-            st.bar_chart(distribution)
 
-            st.markdown("### Prioritised Customer List")
+            c3.metric(
+                "Retention Priority",
+                priority(level)
+            )
 
-            display_columns = []
-            if "customerID" in results.columns:
-                display_columns.append("customerID")
 
-            display_columns += [
-                "ChurnRiskScore",
-                "RiskLevel",
-                "RetentionPriority",
-                "Contract",
-                "tenure",
-                "MonthlyCharges",
-                "RecommendedAction",
-            ]
+            st.progress(score)
+
+
+            st.markdown("### Customer Profile")
+
+            display = pd.DataFrame(
+                {
+                    "Attribute": list(customer.keys()),
+                    "Value": list(customer.values())
+                }
+            )
 
             st.dataframe(
-                results[display_columns],
-                use_container_width=True,
-                hide_index=True,
+                display,
+                hide_index=True
             )
 
-            csv_data = results.to_csv(index=False).encode("utf-8")
 
-            st.download_button(
-                label="Download Prioritised Customer List",
-                data=csv_data,
-                file_name="customer_retention_priority.csv",
-                mime="text/csv",
+            st.markdown("### Customer Risk Indicators")
+
+            for item in risk_indicators(customer):
+                st.write("• " + item)
+
+
+            st.markdown("### Retention Recommendation")
+
+            st.info(
+                recommendation(level)
+            )
+
+
+    else:
+
+        st.info(
+            "Use this mode to test different customer scenarios."
+        )
+
+        customer = {}
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+
+            customer["gender"] = st.selectbox(
+                "Gender",
+                CATEGORY_LEVELS["gender"]
+            )
+
+            customer["SeniorCitizen"] = (
+                1 if st.selectbox(
+                    "Senior Citizen",
+                    ["No","Yes"]
+                ) == "Yes"
+                else 0
+            )
+
+            customer["tenure"] = st.number_input(
+                "Tenure",
+                0,
+                100,
+                12
+            )
+
+            customer["Contract"] = st.selectbox(
+                "Contract",
+                CATEGORY_LEVELS["Contract"]
+            )
+
+            customer["InternetService"] = st.selectbox(
+                "Internet Service",
+                CATEGORY_LEVELS["InternetService"]
+            )
+
+
+        with col2:
+
+            customer["PaymentMethod"] = st.selectbox(
+                "Payment Method",
+                CATEGORY_LEVELS["PaymentMethod"]
+            )
+
+            customer["MonthlyCharges"] = st.number_input(
+                "Monthly Charges",
+                0.0,
+                200.0,
+                70.0
+            )
+
+            customer["TotalCharges"] = st.number_input(
+                "Total Charges",
+                0.0,
+                10000.0,
+                840.0
+            )
+
+            customer["OnlineSecurity"] = st.selectbox(
+                "Online Security",
+                CATEGORY_LEVELS["OnlineSecurity"]
+            )
+
+            customer["TechSupport"] = st.selectbox(
+                "Tech Support",
+                CATEGORY_LEVELS["TechSupport"]
+            )
+
+
+        # hidden default attributes
+        customer.update(
+            {
+                "Partner":"No",
+                "Dependents":"No",
+                "PhoneService":"Yes",
+                "MultipleLines":"No",
+                "OnlineBackup":"No",
+                "DeviceProtection":"No",
+                "StreamingTV":"No",
+                "StreamingMovies":"No",
+                "PaperlessBilling":"No"
+            }
+        )
+
+
+        if st.button("Calculate Scenario Risk"):
+
+            score, level = predict_customer(customer)
+
+            st.metric(
+                "Estimated Churn Risk",
+                f"{score:.1%}"
+            )
+
+            st.write(
+                "Risk Level:",
+                level
             )
 
 
 # ------------------------------------------------------------
-# Tab 3: Decision logic
+# Page 2
 # ------------------------------------------------------------
-elif page == "Decision Logic":
-    st.subheader("How the Application Supports Business Decisions")
 
-    st.markdown(
-        """
-        **1. Customer data**  
-        Customer profile and service information are entered or uploaded.
+elif page == "📊 Retention Management Dashboard":
 
-        **2. Churn model**  
-        The saved final model generates a churn risk score.
-
-        **3. Risk level**  
-        The score is converted into an operational risk band:
-        - High: score ≥ 0.70
-        - Medium: 0.40 ≤ score < 0.70
-        - Low: score < 0.40
-
-        **4. Retention priority**  
-        High-risk customers are placed at the top of the follow-up queue.
-
-        **5. Recommended action**  
-        The application suggests the type of retention response that employees can
-        consider for each risk level.
-
-        **User-friendly design principle:** reduce unnecessary input requirements while maintaining the model workflow.
-
-        **Business objective:** identify customers who may leave early enough for the
-        company to prioritise retention resources more efficiently.
-        """
+    st.subheader(
+        "Retention Management Dashboard"
     )
 
-    st.warning(
-        "The 0.40 and 0.70 risk bands are operational rules for this prototype. "
-        "They should be reviewed against real retention costs and outcomes before "
-        "production deployment."
+
+    if portfolio is None:
+
+        st.error(
+            "demo_customer_portfolio.csv not found."
+        )
+
+    else:
+
+        results = portfolio.copy()
+
+        encoded = prepare_input(results)
+
+        scores = model.predict_proba(encoded)[:,1]
+
+        results["ChurnRiskScore"] = scores
+
+        results["RiskLevel"] = (
+            results["ChurnRiskScore"]
+            .apply(risk_level)
+        )
+
+        results["RetentionPriority"] = (
+            results["RiskLevel"]
+            .apply(priority)
+        )
+
+
+        a,b,c,d = st.columns(4)
+
+        a.metric(
+            "Customers Analysed",
+            len(results)
+        )
+
+        b.metric(
+            "High Risk",
+            sum(results["RiskLevel"]=="High")
+        )
+
+        c.metric(
+            "Medium Risk",
+            sum(results["RiskLevel"]=="Medium")
+        )
+
+        d.metric(
+            "Low Risk",
+            sum(results["RiskLevel"]=="Low")
+        )
+
+
+        st.bar_chart(
+            results["RiskLevel"]
+            .value_counts()
+        )
+
+
+        st.markdown(
+            "### Priority Customer List"
+        )
+
+
+        st.dataframe(
+            results[
+                [
+                    "customerID",
+                    "ChurnRiskScore",
+                    "RiskLevel",
+                    "RetentionPriority",
+                    "Contract",
+                    "tenure",
+                    "MonthlyCharges"
+                ]
+            ]
+            .sort_values(
+                "ChurnRiskScore",
+                ascending=False
+            ),
+            hide_index=True
+        )
+
+
+# ------------------------------------------------------------
+# Page 3
+# ------------------------------------------------------------
+
+else:
+
+    st.subheader(
+        "Model Explanation"
+    )
+
+
+    st.write(
+        """
+        Final model selected:
+
+        **Gradient Boosting**
+
+        Selection reason:
+
+        Highest F1-score among evaluated models.
+
+        Test F1-score:
+
+        **0.6306**
+
+        F1-score was selected because churn prediction requires
+        balancing the identification of churn customers and
+        avoiding unnecessary retention costs.
+
+        The churn risk score supports business prioritisation
+        and should not be interpreted as a guaranteed outcome.
+        """
     )
