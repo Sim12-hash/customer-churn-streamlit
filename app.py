@@ -2,7 +2,7 @@ import os
 import joblib
 import pandas as pd
 import streamlit as st
-
+from pathlib import Path
 # ------------------------------------------------------------
 # Page setup
 # ------------------------------------------------------------
@@ -12,8 +12,10 @@ st.set_page_config(
     layout="wide"
 )
 
-MODEL_PATH = "final_churn_model.pkl"
-PORTFOLIO_PATH = "demo_customer_portfolio.csv"
+BASE_DIR = Path(__file__).resolve().parent
+
+MODEL_PATH = BASE_DIR / "final_churn_model.pkl"
+PORTFOLIO_PATH = BASE_DIR / "demo_customer_portfolio.csv"
 
 
 # ------------------------------------------------------------
@@ -113,7 +115,7 @@ def load_model():
 
 @st.cache_data
 def load_portfolio():
-    if os.path.exists(PORTFOLIO_PATH):
+    if PORTFOLIO_PATH.exists():
         return pd.read_csv(PORTFOLIO_PATH)
     return None
 
