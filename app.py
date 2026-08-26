@@ -400,8 +400,26 @@ if page == "🔍 Customer Risk Assessment":
             scenario_customer["OnlineSecurity"] = st.selectbox("Update Online Security", CATEGORY_LEVELS["OnlineSecurity"], index=CATEGORY_LEVELS["OnlineSecurity"].index(base_customer["OnlineSecurity"]))
             scenario_customer["PaymentMethod"] = st.selectbox("Update Payment Method", CATEGORY_LEVELS["PaymentMethod"], index=CATEGORY_LEVELS["PaymentMethod"].index(base_customer["PaymentMethod"]))
 
-        if st.button("Run Simulation", type="primary"):
-            scenario_score, scenario_level = predict_customer(scenario_customer)
+                    st.markdown("#### Scenario Changes")
+
+            changes = []
+
+            for variable in [
+                "Contract",
+                "TechSupport",
+                "OnlineSecurity",
+                "PaymentMethod"
+            ]:
+                if base_customer[variable] != scenario_customer[variable]:
+                    changes.append(
+                        f"**{variable}:** {base_customer[variable]} → {scenario_customer[variable]}"
+                    )
+
+            if changes:
+                for change in changes:
+                    st.write("🔹 " + change)
+            else:
+                st.write("No customer profile changes were made.")
 
             st.markdown("#### Simulation Results")
             c1, c2, c3 = st.columns(3)
@@ -563,8 +581,22 @@ else:
         "Gradient Boosting achieved the highest Test F1-Score."
     )
     
-    # Updated Threshold Justification
-    st.info("ℹ️ **Operational Thresholds:** Risk categories (High >= 70%, Medium 40%-69%, Low < 40%) were selected as operational prioritisation rules for this prototype rather than absolute statistical decision boundaries. These thresholds help customer success teams focus resources effectively and can be adjusted according to business requirements.")
+    st.info(
+    """
+    ℹ️ **Operational Thresholds**
+
+    Risk categories are defined as:
+
+    - **High Risk:** Churn probability >= 70%
+    - **Medium Risk:** Churn probability between 40% and 69%
+    - **Low Risk:** Churn probability < 40%
+
+    These thresholds are business-defined prioritisation rules for this prototype,
+    rather than model calibration thresholds or absolute statistical boundaries.
+    They help customer success teams allocate retention resources effectively and
+    can be adjusted according to future business requirements.
+    """
+)
 
     st.divider()
 
