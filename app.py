@@ -358,7 +358,7 @@ if page == "🔍 Customer Risk Assessment":
             if indicators:
                 for item in indicators:
                     st.write(f"🔹 {item}")
-        else:
+    else:
 
         st.info(
             "Adjust selected customer attributes to simulate how the estimated "
