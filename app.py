@@ -400,32 +400,53 @@ if page == "🔍 Customer Risk Assessment":
             scenario_customer["OnlineSecurity"] = st.selectbox("Update Online Security", CATEGORY_LEVELS["OnlineSecurity"], index=CATEGORY_LEVELS["OnlineSecurity"].index(base_customer["OnlineSecurity"]))
             scenario_customer["PaymentMethod"] = st.selectbox("Update Payment Method", CATEGORY_LEVELS["PaymentMethod"], index=CATEGORY_LEVELS["PaymentMethod"].index(base_customer["PaymentMethod"]))
 
-            st.markdown("#### Scenario Changes")
+            if st.button("Run Simulation", type="primary"):
 
-            changes = []
+    scenario_score, scenario_level = predict_customer(
+        scenario_customer
+    )
 
-            for variable in [
-                "Contract",
-                "TechSupport",
-                "OnlineSecurity",
-                "PaymentMethod"
-            ]:
-                if base_customer[variable] != scenario_customer[variable]:
-                    changes.append(
-                        f"**{variable}:** {base_customer[variable]} → {scenario_customer[variable]}"
-                    )
+    st.markdown("#### Scenario Changes")
 
-            if changes:
-                for change in changes:
-                    st.write("🔹 " + change)
-            else:
-                st.write("No customer profile changes were made.")
+    changes = []
 
-            st.markdown("#### Simulation Results")
-            c1, c2, c3 = st.columns(3)
-            c1.metric("Original Risk Score", f"{current_score:.1%}")
-            c2.metric("Simulated Risk Score", f"{scenario_score:.1%}")
-            c3.metric("Risk Delta", f"{scenario_score-current_score:+.1%}", delta_color="inverse")
+    for variable in [
+        "Contract",
+        "TechSupport",
+        "OnlineSecurity",
+        "PaymentMethod"
+    ]:
+        if base_customer[variable] != scenario_customer[variable]:
+            changes.append(
+                f"**{variable}:** {base_customer[variable]} → {scenario_customer[variable]}"
+            )
+
+    if changes:
+        for change in changes:
+            st.write("🔹 " + change)
+    else:
+        st.write("No customer profile changes were made.")
+
+
+    st.markdown("#### Simulation Results")
+
+    c1, c2, c3 = st.columns(3)
+
+    c1.metric(
+        "Original Risk Score",
+        f"{current_score:.1%}"
+    )
+
+    c2.metric(
+        "Simulated Risk Score",
+        f"{scenario_score:.1%}"
+    )
+
+    c3.metric(
+        "Risk Delta",
+        f"{scenario_score-current_score:+.1%}",
+        delta_color="inverse"
+    )
             
             l1, l2, l3 = st.columns(3)
             l1.metric("Original Risk Level", current_level)
