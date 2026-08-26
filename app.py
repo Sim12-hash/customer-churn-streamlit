@@ -209,10 +209,9 @@ def risk_indicators(customer):
     try:
         tenure_val = float(customer.get("tenure", 0))
         if tenure_val < 12:
-            indicators.append("Short customer tenure (Associated with higher churn risk)")
+            indicators.append("Short customer tenure") 
     except ValueError:
         pass
-
     try:
         monthly_val = float(customer.get("MonthlyCharges", 0))
         if monthly_val >= 80:
@@ -279,7 +278,7 @@ with st.sidebar:
     st.divider()
     
     st.markdown("**System Status:** 🟢 Active")
-    st.caption("Deployment: Streamlit Prototype\n\nModel Engine: Gradient Boosting v1.0")
+    st.caption("Deployment: Streamlit Prototype\n\nModel Engine: Gradient Boosting")
 # ------------------------------------------------------------
 # Page 1: Customer Risk Assessment (UI/UX, Profile & Session State Optimized)
 # ------------------------------------------------------------
@@ -414,7 +413,7 @@ if page == "🔍 Customer Risk Assessment":
             l1.metric("Original Risk Level", current_level)
             l2.metric("Simulated Risk Level", scenario_level)
             
-            st.caption("🟢 *Note: A negative Risk Delta indicates that the model estimates a lower churn risk under the simulated scenario. The goal is to downgrade the Risk Level.*")
+            st.caption("🟢 *Note: The result shows how the model-estimated risk level changes under the simulated scenario.*")
             
 # ------------------------------------------------------------
 # Page 2: Retention Management Dashboard
@@ -446,6 +445,7 @@ elif page == "📊 Retention Management Dashboard":
         tab1, tab2, tab3 = st.tabs(["📋 Contract Patterns", "💰 Financial Patterns", "⏳ Tenure Patterns"])
 
         with tab1:
+            st.caption("Helps identify whether customer commitment level is associated with different estimated churn risk groups.")
             fig1 = px.histogram(
                 results, x="RiskLevel", color="Contract", barmode="group",
                 category_orders={"RiskLevel": ["High", "Medium", "Low"]},
@@ -456,6 +456,7 @@ elif page == "📊 Retention Management Dashboard":
             st.plotly_chart(fig1, use_container_width=True)
 
         with tab2:
+            st.caption("Helps evaluate if financial burden correlates with the model's churn risk predictions.")
             fig2 = px.box(
                 results, x="RiskLevel", y="MonthlyCharges", color="RiskLevel",
                 category_orders={"RiskLevel": ["High", "Medium", "Low"]},
@@ -465,6 +466,7 @@ elif page == "📊 Retention Management Dashboard":
             st.plotly_chart(fig2, use_container_width=True)
 
         with tab3:
+            st.caption("Helps identify customer lifecycle stages requiring prioritized retention attention.")
             fig3 = px.scatter(
                 results, x="tenure", y="ChurnRiskScore", color="RiskLevel", size="MonthlyCharges",
                 hover_data=["customerID", "Contract"],
