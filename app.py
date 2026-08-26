@@ -407,7 +407,6 @@ if page == "🔍 Customer Risk Assessment":
             c1.metric("Original Risk", f"{current_score:.1%}")
             c2.metric("Simulated Risk", f"{scenario_score:.1%}")
             c3.metric("Risk Delta", f"{scenario_score-current_score:+.1%}", delta_color="inverse")
-
 # ------------------------------------------------------------
 # Page 2: Retention Management Dashboard (CLO2 Optimized)
 # ------------------------------------------------------------
