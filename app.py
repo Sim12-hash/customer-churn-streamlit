@@ -502,16 +502,16 @@ else:
         "All models utilized the same stratified 80/20 train-test split and 5-fold cross-validation."
     )
 
-    # 🔴 Fixed: Exact metrics from the Jupyter Notebook output
     model_metrics = pd.DataFrame({
         "Algorithm": [
             "Logistic Regression (Baseline)", 
             "Decision Tree", 
+            "Random Forest", 
             "Gradient Boosting (Final)"
         ],
-        "Test Accuracy": ["74.10%", "76.79%", "78.50%"],
-        "ROC-AUC": ["0.8380", "0.8431", "0.8520"],
-        "Test F1-Score": ["0.6121", "0.6237", "0.6306"]
+        "Test Accuracy": ["74.10%", "74.10%", "76.79%", "78.50%"],
+        "ROC-AUC": ["0.8380", "0.8177", "0.8431", "0.8520"],
+        "Test F1-Score": ["0.6121", "0.6162", "0.6237", "0.6306"]
     })
     
     st.dataframe(
@@ -519,10 +519,22 @@ else:
         hide_index=True, 
         use_container_width=True,
         column_config={
-            "Algorithm": st.column_config.TextColumn("Algorithm"),
-            "Test Accuracy": st.column_config.TextColumn("Accuracy"),
-            "ROC-AUC": st.column_config.TextColumn("ROC-AUC"),
-            "Test F1-Score": st.column_config.TextColumn("Test F1-Score")
+            "Algorithm": st.column_config.TextColumn(
+                "Algorithm", 
+                help="The machine learning methodology evaluated via CRISP-DM."
+            ),
+            "Test Accuracy": st.column_config.TextColumn(
+                "Accuracy", 
+                help="The overall percentage of correct predictions. Note: Can be misleading in imbalanced churn datasets."
+            ),
+            "ROC-AUC": st.column_config.TextColumn(
+                "ROC-AUC", 
+                help="Area Under the ROC Curve (1.0 is perfect). It measures the model's ability to distinguish between churners and retained customers."
+            ),
+            "Test F1-Score": st.column_config.TextColumn(
+                "Test F1-Score", 
+                help="The harmonic mean of Precision and Recall. This is the MOST important metric here as it balances the cost of false alarms vs. missed churners."
+            )
         }
     )
 
