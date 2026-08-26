@@ -358,101 +358,219 @@ if page == "🔍 Customer Risk Assessment":
             if indicators:
                 for item in indicators:
                     st.write(f"🔹 {item}")
-    else:
-        st.info("Adjust the attributes below to simulate how the estimated churn risk score may change under different customer profile scenarios.")
+        else:
+
+        st.info(
+            "Adjust selected customer attributes to simulate how the estimated "
+            "churn risk score may change under different customer profile scenarios."
+        )
 
         if portfolio is None:
             st.error("Customer portfolio unavailable.")
             st.stop()
 
         if "selected_customer" not in st.session_state:
-            st.warning("Please analyse an existing customer first before running scenario analysis.")
+            st.warning(
+                "Please analyse an existing customer first before running scenario analysis."
+            )
             st.stop()
+
 
         base_customer = st.session_state["selected_customer"]
         current_score = st.session_state["selected_score"]
         current_level = st.session_state["selected_level"]
 
-        # Added explicit Identity Tracker
-        st.markdown(f"**Analysing Customer:** `{base_customer['customerID']}`")
-        st.metric("Current Churn Risk", f"{current_score:.1%}")
 
+        # Customer identity
+        st.markdown(
+            f"**Analysing Customer:** `{base_customer['customerID']}`"
+        )
+
+
+        c1, c2 = st.columns(2)
+
+        with c1:
+            st.metric(
+                "Current Churn Risk",
+                f"{current_score:.1%}"
+            )
+
+        with c2:
+            st.metric(
+                "Current Risk Level",
+                current_level
+            )
+
+
+        # Explanation
         with st.expander("ℹ️ Actionable Levers Explained"):
-            st.write("Only actionable customer attributes are included because managers can influence these factors through targeted retention strategies.")
-            st.markdown("""
-            **Included variables:**
-            *   **Contract:** Customer commitment level
-            *   **Tech Support:** Service experience improvement
-            *   **Online Security:** Additional service value
-            *   **Payment Method:** Billing convenience
-            """)
+
+            st.write(
+                "Only actionable customer attributes are included because "
+                "managers can influence these factors through targeted retention strategies."
+            )
+
+            st.markdown(
+                """
+                **Included variables:**
+
+                🔹 **Contract**  
+                Customer commitment level
+
+                🔹 **Tech Support**  
+                Service experience improvement
+
+                🔹 **Online Security**  
+                Additional service value
+
+                🔹 **Payment Method**  
+                Billing convenience
+                """
+            )
+
 
         scenario_customer = base_customer.copy()
 
+
         st.markdown("### Modify Customer Scenario")
+
+
         col1, col2 = st.columns(2)
 
+
         with col1:
-            scenario_customer["Contract"] = st.selectbox("Update Contract", CATEGORY_LEVELS["Contract"], index=CATEGORY_LEVELS["Contract"].index(base_customer["Contract"]))
-            scenario_customer["TechSupport"] = st.selectbox("Update Tech Support", CATEGORY_LEVELS["TechSupport"], index=CATEGORY_LEVELS["TechSupport"].index(base_customer["TechSupport"]))
 
-        with col2:
-            scenario_customer["OnlineSecurity"] = st.selectbox("Update Online Security", CATEGORY_LEVELS["OnlineSecurity"], index=CATEGORY_LEVELS["OnlineSecurity"].index(base_customer["OnlineSecurity"]))
-            scenario_customer["PaymentMethod"] = st.selectbox("Update Payment Method", CATEGORY_LEVELS["PaymentMethod"], index=CATEGORY_LEVELS["PaymentMethod"].index(base_customer["PaymentMethod"]))
-
-            if st.button("Run Simulation", type="primary"):
-
-    scenario_score, scenario_level = predict_customer(
-        scenario_customer
-    )
-
-    st.markdown("#### Scenario Changes")
-
-    changes = []
-
-    for variable in [
-        "Contract",
-        "TechSupport",
-        "OnlineSecurity",
-        "PaymentMethod"
-    ]:
-        if base_customer[variable] != scenario_customer[variable]:
-            changes.append(
-                f"**{variable}:** {base_customer[variable]} → {scenario_customer[variable]}"
+            scenario_customer["Contract"] = st.selectbox(
+                "Update Contract",
+                CATEGORY_LEVELS["Contract"],
+                index=CATEGORY_LEVELS["Contract"].index(
+                    base_customer["Contract"]
+                )
             )
 
-    if changes:
-        for change in changes:
-            st.write("🔹 " + change)
-    else:
-        st.write("No customer profile changes were made.")
+
+            scenario_customer["TechSupport"] = st.selectbox(
+                "Update Tech Support",
+                CATEGORY_LEVELS["TechSupport"],
+                index=CATEGORY_LEVELS["TechSupport"].index(
+                    base_customer["TechSupport"]
+                )
+            )
 
 
-    st.markdown("#### Simulation Results")
+        with col2:
 
-    c1, c2, c3 = st.columns(3)
+            scenario_customer["OnlineSecurity"] = st.selectbox(
+                "Update Online Security",
+                CATEGORY_LEVELS["OnlineSecurity"],
+                index=CATEGORY_LEVELS["OnlineSecurity"].index(
+                    base_customer["OnlineSecurity"]
+                )
+            )
 
-    c1.metric(
-        "Original Risk Score",
-        f"{current_score:.1%}"
-    )
 
-    c2.metric(
-        "Simulated Risk Score",
-        f"{scenario_score:.1%}"
-    )
+            scenario_customer["PaymentMethod"] = st.selectbox(
+                "Update Payment Method",
+                CATEGORY_LEVELS["PaymentMethod"],
+                index=CATEGORY_LEVELS["PaymentMethod"].index(
+                    base_customer["PaymentMethod"]
+                )
+            )
 
-    c3.metric(
-        "Risk Delta",
-        f"{scenario_score-current_score:+.1%}",
-        delta_color="inverse"
-    )
-            
-            l1, l2, l3 = st.columns(3)
-            l1.metric("Original Risk Level", current_level)
-            l2.metric("Simulated Risk Level", scenario_level)
-            
-            st.caption("🟢 *Note: The result shows how the model-estimated risk level changes under the simulated scenario.*")
+
+
+        if st.button("Run Simulation", type="primary"):
+
+
+            # Predict scenario result first
+            scenario_score, scenario_level = predict_customer(
+                scenario_customer
+            )
+
+
+            # Show changes
+            st.markdown("### Scenario Changes")
+
+
+            changes = []
+
+
+            for variable in [
+                "Contract",
+                "TechSupport",
+                "OnlineSecurity",
+                "PaymentMethod"
+            ]:
+
+                if base_customer[variable] != scenario_customer[variable]:
+
+                    changes.append(
+                        f"**{variable}:** "
+                        f"{base_customer[variable]} → "
+                        f"{scenario_customer[variable]}"
+                    )
+
+
+            if changes:
+
+                for change in changes:
+                    st.write("🔹 " + change)
+
+            else:
+
+                st.write(
+                    "No customer profile changes were made."
+                )
+
+
+
+            # Result comparison
+
+            st.markdown("### Simulation Results")
+
+
+            c1, c2, c3 = st.columns(3)
+
+
+            c1.metric(
+                "Original Risk Score",
+                f"{current_score:.1%}"
+            )
+
+
+            c2.metric(
+                "Simulated Risk Score",
+                f"{scenario_score:.1%}"
+            )
+
+
+            c3.metric(
+                "Risk Delta",
+                f"{scenario_score-current_score:+.1%}",
+                delta_color="inverse"
+            )
+
+
+            l1, l2 = st.columns(2)
+
+
+            l1.metric(
+                "Original Risk Level",
+                current_level
+            )
+
+
+            l2.metric(
+                "Simulated Risk Level",
+                scenario_level
+            )
+
+
+            st.caption(
+                "The result shows how the model-estimated risk level changes "
+                "under the simulated scenario. It should not be interpreted "
+                "as a guaranteed causal effect."
+            )
             
 # ------------------------------------------------------------
 # Page 2: Retention Management Dashboard
