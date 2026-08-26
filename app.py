@@ -201,28 +201,34 @@ def recommendation(level):
 
 
 def risk_indicators(customer):
-
     indicators = []
 
-    if customer["Contract"] == "Month-to-month":
+    if customer.get("Contract") == "Month-to-month":
         indicators.append("Month-to-month contract")
 
-    if float(customer["tenure"]) < 12:
-        indicators.append("Short customer tenure")
+    # Safe float conversion to prevent App crashes from blank strings (" ") in raw data
+    try:
+        tenure_val = float(customer.get("tenure", 0))
+        if tenure_val < 12:
+            indicators.append("Short customer tenure (High flight risk)")
+    except ValueError:
+        pass
 
-    if float(customer["MonthlyCharges"]) >= 80:
-        indicators.append("Relatively high monthly charges")
+    try:
+        monthly_val = float(customer.get("MonthlyCharges", 0))
+        if monthly_val >= 80:
+            indicators.append("High monthly expenditure (Price sensitivity)")
+    except ValueError:
+        pass
 
-    if customer["PaymentMethod"] == "Electronic check":
+    if customer.get("PaymentMethod") == "Electronic check":
         indicators.append("Electronic check payment")
 
-    if customer["TechSupport"] == "No":
+    if customer.get("TechSupport") == "No":
         indicators.append("No technical support service")
 
     if not indicators:
-        indicators.append(
-            "No major profile indicator identified"
-        )
+        indicators.append("No major profile indicator identified")
 
     return indicators
 
@@ -332,10 +338,10 @@ if page == "🔍 Customer Risk Assessment":
 
             with p2:
                 st.markdown("**Account & Financials**")
-                st.write(f"**Tenure:** {customer.get('tenure', '-')} months")
+                st.write(f"**Tenure:** {customer.get('tenure', '-')} months active")
                 st.write(f"**Contract:** {customer.get('Contract', '-')}")
-                st.write(f"**Monthly:** ${customer.get('MonthlyCharges', '-')}")
-                st.write(f"**Total:** ${customer.get('TotalCharges', '-')}")
+                st.write(f"**Monthly Bill:** ${customer.get('MonthlyCharges', '-')} / month")
+                st.write(f"**Total Lifetime:** ${customer.get('TotalCharges', '-')} (cumulative)")
 
             with p3:
                 st.markdown("**Core Services**")
@@ -346,6 +352,7 @@ if page == "🔍 Customer Risk Assessment":
             with p4:
                 st.markdown("**Value-Added Services**")
                 st.write(f"**Tech Support:** {customer.get('TechSupport', '-')}")
+                st.write(f"**Device Protection:** {customer.get('DeviceProtection', '-')}")
                 st.write(f"**Security & Backup:** {'Yes' if customer.get('OnlineSecurity')=='Yes' or customer.get('OnlineBackup')=='Yes' else 'No'}")
                 st.write(f"**Streaming (TV/Movies):** {'Yes' if customer.get('StreamingTV')=='Yes' or customer.get('StreamingMovies')=='Yes' else 'No'}")
 
@@ -406,7 +413,10 @@ if page == "🔍 Customer Risk Assessment":
             c1, c2, c3 = st.columns(3)
             c1.metric("Original Risk", f"{current_score:.1%}")
             c2.metric("Simulated Risk", f"{scenario_score:.1%}")
+            # delta_color="inverse" ensures negative numbers are green (good)
             c3.metric("Risk Delta", f"{scenario_score-current_score:+.1%}", delta_color="inverse")
+            
+            st.caption("🟢 *Note: A negative Risk Delta (Green) means your simulated strategy successfully reduced the churn probability.*")
 # ------------------------------------------------------------
 # Page 2: Retention Management Dashboard (Action-Title Optimized)
 # ------------------------------------------------------------
@@ -506,6 +516,8 @@ else:
         "ROC-AUC": ["0.8380", "0.8431", "0.8495", "0.8520"],
         "Test F1-Score": ["0.6121", "0.6162", "0.6210", "0.6306"]
     })
+
+    st.info("🖱️ **User Tip:** Hover your mouse over the table headers (e.g., 'Test Accuracy', 'Test F1-Score') to view detailed explanations of each evaluation metric.")
     
     st.dataframe(
         model_metrics, 
