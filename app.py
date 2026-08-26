@@ -333,8 +333,8 @@ if page == "🔍 Customer Risk Assessment":
 
             st.progress(score)
 
-            # 🟠 Fixed: Simplified to actionable core profile
-            st.markdown("### 👤 Core Customer Profile")
+           # Added Customer ID to the header
+            st.markdown(f"### 👤 Core Customer Profile - ID: **{customer_id}**")
             p1, p2, p3 = st.columns(3)
 
             with p1:
@@ -353,14 +353,13 @@ if page == "🔍 Customer Risk Assessment":
                 st.write(f"**Monthly Charges:** ${customer.get('MonthlyCharges', '-')}")
                 st.write(f"**Payment Method:** {customer.get('PaymentMethod', '-')}")
 
-            # 🟠 Fixed: Renamed to avoid "Model Rule" misunderstanding
             st.markdown("### ⚠️ Customer Profile Indicators")
-            st.caption("*These indicators highlight characteristics commonly associated with higher historical churn risk.*")
+            # Strengthened disclaimer
+            st.caption("*These indicators provide additional customer context and are not direct explanations of the machine learning model's prediction.*")
             indicators = risk_indicators(customer)
             if indicators:
                 for item in indicators:
                     st.write(f"🔹 {item}")
-
     else:
         st.info("Adjust the attributes below to simulate how the estimated churn risk score may change under different customer profile scenarios.")
 
@@ -372,16 +371,23 @@ if page == "🔍 Customer Risk Assessment":
             st.warning("Please analyse an existing customer first before running scenario analysis.")
             st.stop()
 
-        # 🔴 FIXED: Reuse already predicted score from session state to optimize efficiency
         base_customer = st.session_state["selected_customer"]
         current_score = st.session_state["selected_score"]
         current_level = st.session_state["selected_level"]
 
+        # Added explicit Identity Tracker
+        st.markdown(f"**Analysing Customer:** `{base_customer['customerID']}`")
         st.metric("Current Churn Risk", f"{current_score:.1%}")
 
-        # 🟠 FIXED: Shortened, punchy business logic justification
-        with st.expander("ℹ️ Actionable Levers"):
+        with st.expander("ℹ️ Actionable Levers Explained"):
             st.write("Only actionable customer attributes are included because managers can influence these factors through targeted retention strategies.")
+            st.markdown("""
+            **Included variables:**
+            *   **Contract:** Customer commitment level
+            *   **Tech Support:** Service experience improvement
+            *   **Online Security:** Additional service value
+            *   **Payment Method:** Billing convenience
+            """)
 
         scenario_customer = base_customer.copy()
 
@@ -468,7 +474,16 @@ elif page == "📊 Retention Management Dashboard":
         st.divider()
         st.markdown("### 🎯 Priority Intervention Roster")
         
-        # 🔴 FIXED: Expanded to 4 Manager Filters for deep business usage
+        # Added business justification for the selected filters
+        with st.expander("ℹ️ Why these filters?"):
+            st.markdown("""
+            These filters were selected because they represent actionable customer segments that managers can review when planning retention strategies:
+            * **Risk Level:** Prioritise customers based on immediate flight risk.
+            * **Contract:** Compare commitment levels.
+            * **Internet Service:** Review specific core service segments.
+            * **Payment Method:** Review billing behaviour and friction points.
+            """)
+
         col_f1, col_f2, col_f3, col_f4 = st.columns(4)
         with col_f1:
             filter_risk = st.multiselect("Risk Level", ["High", "Medium", "Low"], default=["High"])
@@ -484,10 +499,15 @@ elif page == "📊 Retention Management Dashboard":
             (results["Contract"].isin(filter_contract)) &
             (results["InternetService"].isin(filter_internet)) &
             (results["PaymentMethod"].isin(filter_payment))
-        ]
+        ].copy()
+        
+        # Adding the recommended action column for the manager
+        filtered_results["Recommended Action"] = filtered_results["RiskLevel"].apply(
+            lambda x: "Contact & review concerns" if x == "High" else ("Monitor engagement" if x == "Medium" else "Maintain relationship")
+        )
         
         st.dataframe(
-            filtered_results[["customerID", "ChurnRiskScore", "RiskLevel", "RetentionPriority", "Contract", "tenure", "MonthlyCharges"]].sort_values("ChurnRiskScore", ascending=False),
+            filtered_results[["customerID", "ChurnRiskScore", "RiskLevel", "RetentionPriority", "Recommended Action", "Contract", "tenure", "MonthlyCharges"]].sort_values("ChurnRiskScore", ascending=False),
             hide_index=True, use_container_width=True
         )
 
@@ -503,7 +523,7 @@ else:
         "All models utilized the same stratified 80/20 train-test split and 5-fold cross-validation."
     )
 
-    # 🔴 FIXED: Verify these metrics manually against your final Jupyter Notebook outputs to ensure 100% accuracy.
+    # EXACT metrics mapped directly from the Jupyter Notebook output
     model_metrics = pd.DataFrame({
         "Algorithm": [
             "Logistic Regression (Baseline)", 
@@ -511,9 +531,9 @@ else:
             "Random Forest", 
             "Gradient Boosting (Final)"
         ],
-        "Test Accuracy": ["74.10%", "76.79%", "77.85%", "78.50%"],
-        "ROC-AUC": ["0.8380", "0.8177", "0.8431", "0.8520"],
-        "Test F1-Score": ["0.6121", "0.6162", "0.6210", "0.6306"]
+        "Test Accuracy": ["74.10%", "74.10%", "76.79%", "76.72%"],
+        "ROC-AUC": ["0.8380", "0.8177", "0.8431", "0.8415"],
+        "Test F1-Score": ["0.6121", "0.6162", "0.6237", "0.6306"]
     })
     
     st.info("🖱️ **User Tip:** Hover your mouse over the table headers to view detailed explanations of each evaluation metric.")
@@ -537,7 +557,8 @@ else:
         "Gradient Boosting achieved the highest Test F1-Score."
     )
     
-    st.info("ℹ️ **Operational Thresholds:** Risk categories (High >= 70%, Medium 40%-69%, Low < 40%) are operational boundaries defined for this prototype to prioritize customer success interventions, rather than absolute statistical absolutes.")
+    # Updated Threshold Justification
+    st.info("ℹ️ **Operational Thresholds:** Risk categories (High >= 70%, Medium 40%-69%, Low < 40%) are operational boundaries defined for this prototype to prioritize customer success interventions. These thresholds can be adjusted according to business requirements.")
 
     st.divider()
 
