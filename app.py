@@ -331,11 +331,11 @@ if page == "🔍 Customer Risk Assessment":
                 st.write(f"**Dependents:** {customer.get('Dependents', '-')}")
 
             with p2:
-                st.markdown("**Account & Billing**")
+                st.markdown("**Account & Financials**")
                 st.write(f"**Tenure:** {customer.get('tenure', '-')} months")
                 st.write(f"**Contract:** {customer.get('Contract', '-')}")
-                st.write(f"**Payment:** {customer.get('PaymentMethod', '-')}")
-                st.write(f"**Paperless:** {customer.get('PaperlessBilling', '-')}")
+                st.write(f"**Monthly:** ${customer.get('MonthlyCharges', '-')}")
+                st.write(f"**Total:** ${customer.get('TotalCharges', '-')}")
 
             with p3:
                 st.markdown("**Core Services**")
@@ -346,8 +346,8 @@ if page == "🔍 Customer Risk Assessment":
             with p4:
                 st.markdown("**Value-Added Services**")
                 st.write(f"**Tech Support:** {customer.get('TechSupport', '-')}")
-                st.write(f"**Security:** {customer.get('OnlineSecurity', '-')}")
-                st.write(f"**Backup:** {customer.get('OnlineBackup', '-')}")
+                st.write(f"**Security & Backup:** {'Yes' if customer.get('OnlineSecurity')=='Yes' or customer.get('OnlineBackup')=='Yes' else 'No'}")
+                st.write(f"**Streaming (TV/Movies):** {'Yes' if customer.get('StreamingTV')=='Yes' or customer.get('StreamingMovies')=='Yes' else 'No'}")
 
             st.markdown("### ⚠️ Key Risk Factors")
             indicators = risk_indicators(customer)
@@ -408,7 +408,7 @@ if page == "🔍 Customer Risk Assessment":
             c2.metric("Simulated Risk", f"{scenario_score:.1%}")
             c3.metric("Risk Delta", f"{scenario_score-current_score:+.1%}", delta_color="inverse")
 # ------------------------------------------------------------
-# Page 2: Retention Management Dashboard (CLO2 Optimized)
+# Page 2: Retention Management Dashboard (Action-Title Optimized)
 # ------------------------------------------------------------
 
 elif page == "📊 Retention Management Dashboard":
@@ -426,7 +426,7 @@ elif page == "📊 Retention Management Dashboard":
         results["RiskLevel"] = results["ChurnRiskScore"].apply(risk_level)
         results["RetentionPriority"] = results["RiskLevel"].apply(priority)
 
-        # High-level Metrics with Business Focus
+        # High-level Metrics
         a, b, c, d = st.columns(4)
         a.metric("Total Customers Evaluated", len(results))
         b.metric("High Risk (Priority 1)", sum(results["RiskLevel"]=="High"))
@@ -436,62 +436,47 @@ elif page == "📊 Retention Management Dashboard":
         st.divider()
         st.markdown("### 📈 Customer Journey & Business Insights")
         
-        # Interactive Tabs for Business Intelligence
         tab1, tab2, tab3 = st.tabs(["📋 Contract Strategies", "💰 Financial Health", "⏳ Customer Journey"])
 
         with tab1:
+            # 使用 Action Title
             fig1 = px.histogram(
-                results, 
-                x="RiskLevel", 
-                color="Contract", 
-                barmode="group",
+                results, x="RiskLevel", color="Contract", barmode="group",
                 category_orders={"RiskLevel": ["High", "Medium", "Low"]},
-                title="Risk Distribution by Contract Type",
+                title="Action Insight: Month-to-Month Contracts Drive the Highest Churn Risk",
                 color_discrete_sequence=px.colors.qualitative.Pastel
             )
             fig1.update_layout(yaxis_title="Customer Count")
             st.plotly_chart(fig1, use_container_width=True)
-            st.caption("💡 **Retention Strategy:** Month-to-month contracts dominate the high-risk segment. Consider proactive engagement campaigns offering loyalty incentives to transition these users to secure, long-term annual plans.")
+            st.caption("🔍 **Context & Strategy:** The data reveals a massive concentration of high-risk customers on monthly plans. Business development teams should prioritize aggressive upselling campaigns, offering discounted annual rates to secure these volatile accounts.")
 
         with tab2:
             fig2 = px.box(
-                results, 
-                x="RiskLevel", 
-                y="MonthlyCharges", 
-                color="RiskLevel",
+                results, x="RiskLevel", y="MonthlyCharges", color="RiskLevel",
                 category_orders={"RiskLevel": ["High", "Medium", "Low"]},
-                title="Monthly Expenditure vs. Churn Vulnerability",
+                title="Action Insight: High-Risk Customers Carry the Heaviest Financial Burden",
                 color_discrete_map={"High": "#EF553B", "Medium": "#66C2A5", "Low": "#8DA0CB"}
             )
             st.plotly_chart(fig2, use_container_width=True)
-            st.caption("💡 **Financial Insight:** High-risk customers generally exhibit higher monthly charges. A personalized pricing review, flexible payment options, or a complimentary service upgrade might alleviate immediate churn pressures.")
+            st.caption("🔍 **Context & Strategy:** Users flagged as 'High Risk' are paying significantly more per month. This indicates price sensitivity. Offering personalized downgrades or bundling free value-added services could prevent complete revenue loss.")
 
         with tab3:
             fig3 = px.scatter(
-                results, 
-                x="tenure", 
-                y="ChurnRiskScore", 
-                color="RiskLevel",
-                size="MonthlyCharges",
+                results, x="tenure", y="ChurnRiskScore", color="RiskLevel", size="MonthlyCharges",
                 hover_data=["customerID", "Contract"],
-                title="Customer Tenure vs. Risk Score (Bubble Size: Monthly Charges)",
+                title="Action Insight: The First 12 Months are the Most Critical Survival Window",
                 category_orders={"RiskLevel": ["High", "Medium", "Low"]},
                 color_discrete_map={"High": "#EF553B", "Medium": "#66C2A5", "Low": "#8DA0CB"}
             )
             fig3.add_hline(y=0.70, line_dash="dash", line_color="red", annotation_text="High Risk Threshold")
             st.plotly_chart(fig3, use_container_width=True)
-            st.caption("💡 **Customer Success Insight:** Churn probability peaks heavily during the initial 12 months. Enhancing the onboarding experience and providing dedicated tech support during this critical window is vital for long-term loyalty.")
+            st.caption("🔍 **Context & Strategy:** Churn probability drops dramatically as tenure increases. The customer success team must heavily invest in the 'Onboarding Phase' (Months 1-12) to ensure customers reach the loyalty stage.")
 
         st.divider()
         st.markdown("### 🎯 Priority Intervention Roster")
-        st.caption("Focus your dedicated customer success efforts on the individuals below, sorted by immediate risk severity to maximize retention ROI.")
-        
         st.dataframe(
-            results[
-                ["customerID", "ChurnRiskScore", "RiskLevel", "RetentionPriority", "Contract", "tenure", "MonthlyCharges"]
-            ].sort_values("ChurnRiskScore", ascending=False),
-            hide_index=True,
-            use_container_width=True
+            results[["customerID", "ChurnRiskScore", "RiskLevel", "RetentionPriority", "Contract", "tenure", "MonthlyCharges"]].sort_values("ChurnRiskScore", ascending=False),
+            hide_index=True, use_container_width=True
         )
 
 # ------------------------------------------------------------
@@ -522,7 +507,29 @@ else:
         "Test F1-Score": ["0.6121", "0.6162", "0.6210", "0.6306"]
     })
     
-    st.dataframe(model_metrics, hide_index=True, use_container_width=True)
+   st.dataframe(
+        model_metrics, 
+        hide_index=True, 
+        use_container_width=True,
+        column_config={
+            "Algorithm": st.column_config.TextColumn(
+                "Algorithm", 
+                help="The machine learning methodology evaluated via CRISP-DM."
+            ),
+            "Test Accuracy": st.column_config.TextColumn(
+                "Accuracy", 
+                help="The overall percentage of correct predictions. Note: Can be misleading in imbalanced churn datasets."
+            ),
+            "ROC-AUC": st.column_config.TextColumn(
+                "ROC-AUC", 
+                help="Area Under the ROC Curve (1.0 is perfect). It measures the model's ability to distinguish between churners and retained customers."
+            ),
+            "Test F1-Score": st.column_config.TextColumn(
+                "Test F1-Score", 
+                help="The harmonic mean of Precision and Recall. This is the MOST important metric here as it balances the cost of false alarms vs. missed churners."
+            )
+        }
+    )
 
     st.markdown("### 🏆 Justification for Model Selection")
     st.success("**Gradient Boosting** was selected as the final deployment model.")
