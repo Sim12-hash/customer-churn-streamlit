@@ -279,8 +279,7 @@ with st.sidebar:
     st.divider()
     
     st.markdown("**System Status:** 🟢 Active")
-    st.caption("Deployment: Production Environment\n\nModel Engine: Gradient Boosting v1.0")
-
+    st.caption("Deployment: Streamlit Prototype\n\nModel Engine: Gradient Boosting v1.0")
 # ------------------------------------------------------------
 # Page 1: Customer Risk Assessment (UI/UX, Profile & Session State Optimized)
 # ------------------------------------------------------------
@@ -350,7 +349,7 @@ if page == "🔍 Customer Risk Assessment":
 
             with p3:
                 st.markdown("**Billing Profile**")
-                st.write(f"**Monthly Charges:** ${customer.get('MonthlyCharges', '-')}")
+                st.write(f"**Monthly Charges:** RM{customer.get('MonthlyCharges', '-')}")
                 st.write(f"**Payment Method:** {customer.get('PaymentMethod', '-')}")
 
             st.markdown("### ⚠️ Customer Profile Indicators")
@@ -405,12 +404,17 @@ if page == "🔍 Customer Risk Assessment":
         if st.button("Run Simulation", type="primary"):
             scenario_score, scenario_level = predict_customer(scenario_customer)
 
+            st.markdown("#### Simulation Results")
             c1, c2, c3 = st.columns(3)
-            c1.metric("Original Risk", f"{current_score:.1%}")
-            c2.metric("Simulated Risk", f"{scenario_score:.1%}")
+            c1.metric("Original Risk Score", f"{current_score:.1%}")
+            c2.metric("Simulated Risk Score", f"{scenario_score:.1%}")
             c3.metric("Risk Delta", f"{scenario_score-current_score:+.1%}", delta_color="inverse")
             
-            st.caption("🟢 *Note: A negative Risk Delta indicates that the model estimates a lower churn risk under the simulated scenario.*")
+            l1, l2, l3 = st.columns(3)
+            l1.metric("Original Risk Level", current_level)
+            l2.metric("Simulated Risk Level", scenario_level)
+            
+            st.caption("🟢 *Note: A negative Risk Delta indicates that the model estimates a lower churn risk under the simulated scenario. The goal is to downgrade the Risk Level.*")
             
 # ------------------------------------------------------------
 # Page 2: Retention Management Dashboard
@@ -558,7 +562,7 @@ else:
     )
     
     # Updated Threshold Justification
-    st.info("ℹ️ **Operational Thresholds:** Risk categories (High >= 70%, Medium 40%-69%, Low < 40%) are operational boundaries defined for this prototype to prioritize customer success interventions. These thresholds can be adjusted according to business requirements.")
+    st.info("ℹ️ **Operational Thresholds:** Risk categories (High >= 70%, Medium 40%-69%, Low < 40%) were selected as operational prioritisation rules for this prototype rather than absolute statistical decision boundaries. These thresholds help customer success teams focus resources effectively and can be adjusted according to business requirements.")
 
     st.divider()
 
