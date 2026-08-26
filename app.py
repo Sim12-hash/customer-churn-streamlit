@@ -507,7 +507,7 @@ else:
         "Test F1-Score": ["0.6121", "0.6162", "0.6210", "0.6306"]
     })
     
-   st.dataframe(
+    st.dataframe(
         model_metrics, 
         hide_index=True, 
         use_container_width=True,
