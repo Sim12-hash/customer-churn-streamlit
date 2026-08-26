@@ -400,7 +400,7 @@ if page == "🔍 Customer Risk Assessment":
             scenario_customer["OnlineSecurity"] = st.selectbox("Update Online Security", CATEGORY_LEVELS["OnlineSecurity"], index=CATEGORY_LEVELS["OnlineSecurity"].index(base_customer["OnlineSecurity"]))
             scenario_customer["PaymentMethod"] = st.selectbox("Update Payment Method", CATEGORY_LEVELS["PaymentMethod"], index=CATEGORY_LEVELS["PaymentMethod"].index(base_customer["PaymentMethod"]))
 
-                    st.markdown("#### Scenario Changes")
+            st.markdown("#### Scenario Changes")
 
             changes = []
 
