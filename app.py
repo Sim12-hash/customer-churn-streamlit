@@ -260,18 +260,28 @@ st.caption(
 
 
 # ------------------------------------------------------------
-# Navigation
+# Navigation & System Sidebar (Premium UI)
 # ------------------------------------------------------------
-
-page = st.sidebar.radio(
-    "Navigation",
-    [
-        "🔍 Customer Risk Assessment",
-        "📊 Retention Management Dashboard",
-        "ℹ️ Model Explanation"
-    ]
-)
-
+with st.sidebar:
+    st.markdown("## 🌐 NextGen Telco CRM")
+    st.caption("Intelligent Customer Retention Platform")
+    st.divider()
+    
+    st.markdown("### 🧭 Main Menu")
+    page = st.radio(
+        "Navigation Menu",
+        [
+            "🔍 Customer Risk Assessment",
+            "📊 Retention Management Dashboard",
+            "🔬 Model Evaluation & Analytics"
+        ],
+        label_visibility="collapsed"
+    )
+    
+    st.divider()
+    
+    st.markdown("**System Status:** 🟢 Active")
+    st.caption("Deployment: Production Environment\n\nModel Engine: Gradient Boosting v1.0")
 
 # ------------------------------------------------------------
 # Page 1: Customer Risk Assessment (UI/UX, Profile & Session State Optimized)
@@ -299,20 +309,19 @@ if page == "🔍 Customer Risk Assessment":
             st.error("demo_customer_portfolio.csv not found.")
             st.stop()
 
-        # [FIX] Bind selectbox to session_state to persist selection across page navigations
-        if "dropdown_cust_id" not in st.session_state:
-            st.session_state["dropdown_cust_id"] = portfolio["customerID"].iloc[0]
+        options = portfolio["customerID"].tolist()
+        default_index = 0
+        if st.session_state.get("analyzed_cust_id") in options:
+            default_index = options.index(st.session_state["analyzed_cust_id"])
 
-        customer_id = st.selectbox("Select Customer ID", portfolio["customerID"], key="dropdown_cust_id")
+        customer_id = st.selectbox("Select Customer ID", options, index=default_index)
 
         if st.button("Analyse Customer", type="primary"):
-            # Save analysis flag and data to session state
             st.session_state["analyzed_cust_id"] = customer_id
             customer = portfolio[portfolio["customerID"] == customer_id].iloc[0].to_dict()
             st.session_state["selected_customer"] = customer
             st.session_state["selected_score"], st.session_state["selected_level"] = predict_customer(customer)
 
-        # [FIX] Render UI as long as the current dropdown matches the analyzed ID
         if st.session_state.get("analyzed_cust_id") == customer_id and "selected_customer" in st.session_state:
             
             customer = st.session_state["selected_customer"]
