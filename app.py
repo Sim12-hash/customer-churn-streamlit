@@ -547,7 +547,7 @@ if page == "🔍 Customer Risk Assessment":
 
         level = risk_level(score)
 
-        priority = priority_label(level)
+        priority = retention_priority(level)
 
 
         # ====================================================
@@ -574,7 +574,7 @@ if page == "🔍 Customer Risk Assessment":
 
         metric3.metric(
             "Retention Priority",
-            priority,
+            retention_priority,
             help="Priority level used to support retention planning."
         )
 
@@ -593,19 +593,19 @@ if page == "🔍 Customer Risk Assessment":
         if level == "High":
 
             st.error(
-                recommended_action(level)
+                recommendation(level)
             )
 
         elif level == "Medium":
 
             st.warning(
-                recommended_action(level)
+                recommendation(level)
             )
 
         else:
 
             st.success(
-                recommended_action(level)
+                recommendation(level)
             )
 
 
@@ -621,7 +621,7 @@ if page == "🔍 Customer Risk Assessment":
             "explanations of the machine learning model's prediction."
         )
 
-        indicators = build_profile_flags(customer)
+        indicators = risk_indicators(customer)
 
         for item in indicators:
 
