@@ -295,29 +295,41 @@ if page == "🔍 Customer Risk Assessment":
 
     st.divider()
 
-    # --------------------------------------------------------
-    # Customer Input Form
-    # --------------------------------------------------------
+    # ========================================================
+    # Initialise session state
+    # ========================================================
+
+    if "assessment_result" not in st.session_state:
+        st.session_state["assessment_result"] = None
+
+    if "scenario_result" not in st.session_state:
+        st.session_state["scenario_result"] = None
+
+
+    # ========================================================
+    # CUSTOMER INPUT FORM
+    # ========================================================
 
     with st.form("customer_assessment_form"):
 
-        # ====================================================
+        # ----------------------------------------------------
         # CORE CUSTOMER INFORMATION
-        # ====================================================
+        # ----------------------------------------------------
 
         st.markdown("### Core Customer Information")
 
         st.caption(
-            "Core information is shown first because it combines key customer "
-            "relationship, service and billing details while keeping the assessment "
-            "simple to complete."
+            "Core information is shown first because it combines key "
+            "customer relationship, service and billing details while "
+            "keeping the assessment simple to complete."
         )
 
         col1, col2, col3 = st.columns(3)
 
-        # ----------------------------------------------------
+
+        # ====================================================
         # Customer Relationship
-        # ----------------------------------------------------
+        # ====================================================
 
         with col1:
 
@@ -350,9 +362,10 @@ if page == "🔍 Customer Risk Assessment":
                 help="Customer's current contract type."
             )
 
-        # ----------------------------------------------------
+
+        # ====================================================
         # Service & Support
-        # ----------------------------------------------------
+        # ====================================================
 
         with col2:
 
@@ -382,9 +395,10 @@ if page == "🔍 Customer Risk Assessment":
                 help="Whether the customer subscribes to technical support."
             )
 
-        # ----------------------------------------------------
+
+        # ====================================================
         # Billing
-        # ----------------------------------------------------
+        # ====================================================
 
         with col3:
 
@@ -426,13 +440,15 @@ if page == "🔍 Customer Risk Assessment":
         st.markdown("### Additional Customer Information")
 
         st.caption(
-            "Additional information remains available because these fields are still "
-            "required to maintain the same input structure used during model training."
+            "Additional information remains available because these fields "
+            "are required to maintain the same input structure used during "
+            "model training."
         )
 
         with st.expander("Show additional information"):
 
             add_col1, add_col2, add_col3 = st.columns(3)
+
 
             # ------------------------------------------------
             # Customer Background
@@ -460,8 +476,9 @@ if page == "🔍 Customer Risk Assessment":
                     help="Whether the customer uses paperless billing."
                 )
 
+
             # ------------------------------------------------
-            # Phone & Lines
+            # Phone Services
             # ------------------------------------------------
 
             with add_col2:
@@ -479,6 +496,7 @@ if page == "🔍 Customer Risk Assessment":
                     CATEGORY_LEVELS["MultipleLines"],
                     help="Whether the customer has multiple phone lines."
                 )
+
 
             # ------------------------------------------------
             # Entertainment Services
@@ -509,12 +527,9 @@ if page == "🔍 Customer Risk Assessment":
             use_container_width=True
         )
 
-    # Store the latest What-if result
-    if "scenario_result" not in st.session_state:
-        st.session_state["scenario_result"] = None
-    
+
     # ========================================================
-    # ANALYSIS RESULT
+    # GENERATE CUSTOMER ANALYSIS
     # ========================================================
 
     if submitted:
@@ -554,32 +569,71 @@ if page == "🔍 Customer Risk Assessment":
         retention_priority = priority(level)
 
 
-        # ====================================================
-        # RESULT
-        # ====================================================
+        # ----------------------------------------------------
+        # Save assessment result
+        # ----------------------------------------------------
+
+        st.session_state["assessment_result"] = {
+            "customer": customer.copy(),
+            "score": score,
+            "level": level,
+            "priority": retention_priority
+        }
+
+        # New assessment = clear old scenario result
+        st.session_state["scenario_result"] = None
+
+
+    # ========================================================
+    # DISPLAY SAVED ASSESSMENT RESULT
+    # ========================================================
+
+    assessment = st.session_state["assessment_result"]
+
+
+    if assessment is not None:
+
+        customer = assessment["customer"]
+        score = assessment["score"]
+        level = assessment["level"]
+        retention_priority = assessment["priority"]
+
 
         st.divider()
 
         st.subheader("Customer Churn Assessment")
+
+
+        # ----------------------------------------------------
+        # Main results
+        # ----------------------------------------------------
 
         metric1, metric2, metric3 = st.columns(3)
 
         metric1.metric(
             "Churn Risk Score",
             f"{score:.1%}",
-            help="Estimated churn risk score generated by the deployed machine learning model."
+            help=(
+                "Estimated churn risk score generated by the deployed "
+                "machine learning model."
+            )
         )
 
         metric2.metric(
             "Risk Level",
             level,
-            help="Operational classification based on the selected risk thresholds."
+            help=(
+                "Operational classification based on the selected "
+                "risk thresholds."
+            )
         )
 
         metric3.metric(
             "Retention Priority",
             retention_priority,
-            help="Priority level used to support retention planning."
+            help=(
+                "Priority level used to support retention planning."
+            )
         )
 
 
@@ -588,11 +642,12 @@ if page == "🔍 Customer Risk Assessment":
         )
 
 
-        # ====================================================
-        # RECOMMENDED ACTION
-        # ====================================================
+        # ----------------------------------------------------
+        # Recommended Action
+        # ----------------------------------------------------
 
         st.markdown("### Recommended Retention Action")
+
 
         if level == "High":
 
@@ -613,14 +668,14 @@ if page == "🔍 Customer Risk Assessment":
             )
 
 
-        # ====================================================
-        # CUSTOMER PROFILE INDICATORS
-        # ====================================================
+        # ----------------------------------------------------
+        # Customer Risk Profile
+        # ----------------------------------------------------
 
         st.markdown("### Customer Risk Profile")
 
         st.caption(
-            "These profile indicators provide additional customer context. "
+            "These indicators provide additional customer context. "
             "They are based on simple business rules and are not direct "
             "explanations of the machine learning model's prediction."
         )
@@ -632,9 +687,9 @@ if page == "🔍 Customer Risk Assessment":
             st.write(f"• {item}")
 
 
-        # ====================================================
-        # MODEL SCORE NOTE
-        # ====================================================
+        # ----------------------------------------------------
+        # Model score note
+        # ----------------------------------------------------
 
         st.info(
             "The churn risk score is intended for customer prioritisation. "
@@ -645,28 +700,45 @@ if page == "🔍 Customer Risk Assessment":
 
 
         # ====================================================
-        # OPTIONAL WHAT-IF SCENARIO
+        # WHAT-IF SCENARIO
         # ====================================================
 
         st.markdown("### Explore a What-if Scenario")
 
         st.caption(
-            "You can test selected actionable customer attributes to see "
-            "how the model-estimated churn risk changes under a different scenario."
+            "Test selected actionable customer attributes and observe "
+            "how the model-estimated churn risk changes."
         )
 
-        with st.expander("Open What-if Scenario"):
 
-            scenario_customer = customer.copy()
+        # Automatically open after a scenario has been calculated
+        scenario_open = (
+            st.session_state["scenario_result"] is not None
+        )
+
+
+        with st.expander(
+            "Open What-if Scenario",
+            expanded=scenario_open
+        ):
 
             st.markdown("**Actionable Attributes**")
 
             st.caption(
-                "Only selected attributes that can reasonably be considered "
-                "business intervention levers are included in the scenario analysis."
+                "Only selected attributes are included because they can "
+                "reasonably be considered business intervention levers."
             )
 
+
+            scenario_customer = customer.copy()
+
+
             scenario_col1, scenario_col2 = st.columns(2)
+
+
+            # ------------------------------------------------
+            # Scenario Contract
+            # ------------------------------------------------
 
             with scenario_col1:
 
@@ -679,6 +751,7 @@ if page == "🔍 Customer Risk Assessment":
                     key="scenario_contract"
                 )
 
+
                 scenario_customer["TechSupport"] = st.selectbox(
                     "Scenario Tech Support",
                     CATEGORY_LEVELS["TechSupport"],
@@ -687,6 +760,11 @@ if page == "🔍 Customer Risk Assessment":
                     ),
                     key="scenario_tech"
                 )
+
+
+            # ------------------------------------------------
+            # Scenario Service & Payment
+            # ------------------------------------------------
 
             with scenario_col2:
 
@@ -699,6 +777,7 @@ if page == "🔍 Customer Risk Assessment":
                     key="scenario_security"
                 )
 
+
                 scenario_customer["PaymentMethod"] = st.selectbox(
                     "Scenario Payment Method",
                     CATEGORY_LEVELS["PaymentMethod"],
@@ -709,26 +788,103 @@ if page == "🔍 Customer Risk Assessment":
                 )
 
 
-            if st.session_state["scenario_result"] is not None:
+            # ------------------------------------------------
+            # Run Scenario
+            # ------------------------------------------------
 
-                scenario_result = st.session_state["scenario_result"]
+            if st.button(
+                "Run What-if Scenario",
+                type="secondary",
+                use_container_width=True
+            ):
+
+                scenario_score, scenario_level = predict_customer(
+                    scenario_customer
+                )
+
+
+                # Save result so it survives Streamlit rerun
+                st.session_state["scenario_result"] = {
+                    "score": scenario_score,
+                    "level": scenario_level,
+                    "customer": scenario_customer.copy()
+                }
+
+                st.rerun()
+
+
+            # =================================================
+            # DISPLAY SAVED SCENARIO RESULT
+            # =================================================
+
+            scenario_result = st.session_state["scenario_result"]
+
+
+            if scenario_result is not None:
 
                 scenario_score = scenario_result["score"]
                 scenario_level = scenario_result["level"]
 
+
+                st.divider()
+
+                st.markdown("#### Scenario Changes")
+
+
+                changes = []
+
+                for variable in [
+                    "Contract",
+                    "TechSupport",
+                    "OnlineSecurity",
+                    "PaymentMethod"
+                ]:
+
+                    if (
+                        customer[variable]
+                        != scenario_result["customer"][variable]
+                    ):
+
+                        changes.append(
+                            f"**{variable}:** "
+                            f"{customer[variable]} → "
+                            f"{scenario_result['customer'][variable]}"
+                        )
+
+
+                if changes:
+
+                    for change in changes:
+                        st.write("🔹 " + change)
+
+                else:
+
+                    st.write(
+                        "No customer profile changes were made."
+                    )
+
+
+                # ------------------------------------------------
+                # Scenario results
+                # ------------------------------------------------
+
                 st.markdown("#### Scenario Results")
 
+
                 result_col1, result_col2, result_col3 = st.columns(3)
+
 
                 result_col1.metric(
                     "Original Risk",
                     f"{score:.1%}"
                 )
 
+
                 result_col2.metric(
                     "Scenario Risk",
                     f"{scenario_score:.1%}"
                 )
+
 
                 result_col3.metric(
                     "Risk Change",
@@ -736,22 +892,27 @@ if page == "🔍 Customer Risk Assessment":
                     delta_color="inverse"
                 )
 
+
                 level_col1, level_col2 = st.columns(2)
+
 
                 level_col1.metric(
                     "Original Risk Level",
                     level
                 )
 
+
                 level_col2.metric(
                     "Scenario Risk Level",
                     scenario_level
                 )
 
+
                 st.caption(
-                    "The scenario result shows how the model-estimated risk changes "
-                    "when selected customer attributes are modified. It should not "
-                    "be interpreted as a guaranteed causal effect."
+                    "The scenario result shows how the model-estimated "
+                    "risk changes when selected customer attributes are "
+                    "modified. It should not be interpreted as a guaranteed "
+                    "causal effect."
                 )
             
 # ------------------------------------------------------------
