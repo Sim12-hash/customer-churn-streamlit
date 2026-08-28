@@ -305,40 +305,164 @@ if page == "🔍 Customer Risk Assessment":
         st.session_state["scenario_result"] = None
 
 
-    # ========================================================
-    # CUSTOMER INPUT
-    # ========================================================
+   # ========================================================
+# CUSTOMER INPUT
+# ========================================================
 
-    with st.form("customer_assessment_form"):
+with st.form("customer_assessment_form"):
 
-        # ----------------------------------------------------
-        # CORE CUSTOMER INFORMATION
-        # ----------------------------------------------------
+    # ====================================================
+    # CORE CUSTOMER INFORMATION
+    # ====================================================
 
-        st.markdown("### Core Customer Information")
+    st.markdown("### Core Customer Information")
 
-        st.caption(
-            "These fields are shown first because they provide key "
-            "customer relationship, service and billing information "
-            "for the initial assessment."
+    st.caption(
+        "These fields are prioritised based on the main churn patterns "
+        "identified during exploratory analysis. Other model-required "
+        "attributes remain available under Additional Information."
+    )
+
+    # ----------------------------------------------------
+    # CUSTOMER RELATIONSHIP
+    # ----------------------------------------------------
+
+    st.markdown("**Customer Relationship**")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+
+        tenure = st.number_input(
+            "Tenure (months)",
+            min_value=0,
+            max_value=100,
+            value=12,
+            step=1,
+            help=(
+                "Number of months the customer has remained "
+                "with the company."
+            )
         )
 
-        col1, col2, col3 = st.columns(3)
+    with col2:
+
+        contract = st.selectbox(
+            "Contract",
+            CATEGORY_LEVELS["Contract"],
+            help=(
+                "The customer's current contract type. "
+                "Contract type showed a clear relationship "
+                "with churn during exploratory analysis."
+            )
+        )
 
 
-        # ====================================================
-        # COLUMN 1 — CUSTOMER RELATIONSHIP
-        # ====================================================
+    # ----------------------------------------------------
+    # SERVICE & SUPPORT
+    # ----------------------------------------------------
+
+    st.markdown("**Service & Support**")
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+
+        internet = st.selectbox(
+            "Internet Service",
+            CATEGORY_LEVELS["InternetService"],
+            help=(
+                "Type of internet service used by the customer."
+            )
+        )
+
+    with col2:
+
+        tech_support = st.selectbox(
+            "Tech Support",
+            CATEGORY_LEVELS["TechSupport"],
+            help=(
+                "Whether the customer subscribes to technical "
+                "support."
+            )
+        )
+
+    with col3:
+
+        online_security = st.selectbox(
+            "Online Security",
+            CATEGORY_LEVELS["OnlineSecurity"],
+            help=(
+                "Whether the customer subscribes to online "
+                "security."
+            )
+        )
+
+
+    # ----------------------------------------------------
+    # BILLING
+    # ----------------------------------------------------
+
+    st.markdown("**Billing Information**")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+
+        monthly = st.number_input(
+            "Monthly Charges (RM)",
+            min_value=0.0,
+            value=70.0,
+            step=1.0,
+            help=(
+                "The customer's current monthly charges."
+            )
+        )
+
+    with col2:
+
+        payment = st.selectbox(
+            "Payment Method",
+            CATEGORY_LEVELS["PaymentMethod"],
+            help=(
+                "The customer's current payment method."
+            )
+        )
+
+
+    # ====================================================
+    # ADDITIONAL CUSTOMER INFORMATION
+    # ====================================================
+
+    st.markdown("### Additional Customer Information")
+
+    st.caption(
+        "These attributes are still used by the model but are placed "
+        "under an expandable section to keep the main assessment "
+        "focused and easier to complete."
+    )
+
+    with st.expander("Show Additional Information"):
+
+        # ------------------------------------------------
+        # CUSTOMER BACKGROUND
+        # ------------------------------------------------
+
+        st.markdown("**Customer Background**")
+
+        col1, col2, col3, col4 = st.columns(4)
 
         with col1:
-
-            st.markdown("**Customer Relationship**")
 
             gender = st.selectbox(
                 "Gender",
                 CATEGORY_LEVELS["gender"],
-                help="Customer gender recorded in the customer profile."
+                help=(
+                    "Customer gender recorded in the customer profile."
+                )
             )
+
+        with col2:
 
             senior = st.selectbox(
                 "Senior Citizen",
@@ -349,79 +473,66 @@ if page == "🔍 Customer Risk Assessment":
                 )
             )
 
-            tenure = st.number_input(
-                "Tenure (months)",
-                min_value=0,
-                max_value=100,
-                value=12,
-                step=1,
+        with col3:
+
+            partner = st.selectbox(
+                "Partner",
+                CATEGORY_LEVELS["Partner"],
                 help=(
-                    "Number of months the customer has remained "
-                    "with the company."
+                    "Indicates whether the customer has a partner."
                 )
             )
 
-            contract = st.selectbox(
-                "Contract",
-                CATEGORY_LEVELS["Contract"],
-                help="The customer's current contract type."
+        with col4:
+
+            dependents = st.selectbox(
+                "Dependents",
+                CATEGORY_LEVELS["Dependents"],
+                help=(
+                    "Indicates whether the customer has dependents."
+                )
             )
 
 
-        # ====================================================
-        # COLUMN 2 — SERVICE & SUPPORT
-        # ====================================================
+        # ------------------------------------------------
+        # PHONE SERVICES
+        # ------------------------------------------------
+
+        st.markdown("**Phone Services**")
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+
+            phone = st.selectbox(
+                "Phone Service",
+                CATEGORY_LEVELS["PhoneService"],
+                help=(
+                    "Indicates whether the customer has phone service."
+                )
+            )
 
         with col2:
 
-            st.markdown("**Service & Support**")
-
-            internet = st.selectbox(
-                "Internet Service",
-                CATEGORY_LEVELS["InternetService"],
-                help="Type of internet service used by the customer."
-            )
-
-            online_security = st.selectbox(
-                "Online Security",
-                CATEGORY_LEVELS["OnlineSecurity"],
+            multiple_lines = st.selectbox(
+                "Multiple Lines",
+                CATEGORY_LEVELS["MultipleLines"],
                 help=(
-                    "Indicates whether the customer subscribes "
-                    "to online security."
-                )
-            )
-
-            tech_support = st.selectbox(
-                "Tech Support",
-                CATEGORY_LEVELS["TechSupport"],
-                help=(
-                    "Indicates whether the customer subscribes "
-                    "to technical support."
+                    "Indicates whether the customer has multiple "
+                    "phone lines."
                 )
             )
 
 
-        # ====================================================
-        # COLUMN 3 — BILLING
-        # ====================================================
+        # ------------------------------------------------
+        # ADDITIONAL SERVICES
+        # ------------------------------------------------
 
-        with col3:
+        st.markdown("**Additional Services**")
 
-            st.markdown("**Billing Information**")
+        col1, col2, col3, col4 = st.columns(4)
 
-            monthly = st.number_input(
-                "Monthly Charges (RM)",
-                min_value=0.0,
-                value=70.0,
-                step=1.0,
-                help="The customer's current monthly charges."
-            )
-
-            payment = st.selectbox(
-                "Payment Method",
-                CATEGORY_LEVELS["PaymentMethod"],
-                help="The customer's current payment method."
-            )
+        with col1:
 
             online_backup = st.selectbox(
                 "Online Backup",
@@ -432,6 +543,8 @@ if page == "🔍 Customer Risk Assessment":
                 )
             )
 
+        with col2:
+
             device_protection = st.selectbox(
                 "Device Protection",
                 CATEGORY_LEVELS["DeviceProtection"],
@@ -441,124 +554,72 @@ if page == "🔍 Customer Risk Assessment":
                 )
             )
 
-        # ====================================================
-        # ADDITIONAL INFORMATION
-        # ====================================================
+        with col3:
 
-        st.markdown("### Additional Customer Information")
-
-        st.caption(
-            "Additional fields remain available to preserve the complete "
-            "input structure required by the trained model."
-        )
-
-        with st.expander("Show additional information"):
-
-            add_col1, add_col2, add_col3 = st.columns(3)
-
-
-            # ------------------------------------------------
-            # CUSTOMER BACKGROUND
-            # ------------------------------------------------
-
-            with add_col1:
-
-                st.markdown("**Customer Background**")
-
-                partner = st.selectbox(
-                    "Partner",
-                    CATEGORY_LEVELS["Partner"],
-                    help=(
-                        "Indicates whether the customer has "
-                        "a partner."
-                    )
+            streaming_tv = st.selectbox(
+                "Streaming TV",
+                CATEGORY_LEVELS["StreamingTV"],
+                help=(
+                    "Indicates whether the customer subscribes "
+                    "to streaming TV."
                 )
+            )
 
-                dependents = st.selectbox(
-                    "Dependents",
-                    CATEGORY_LEVELS["Dependents"],
-                    help=(
-                        "Indicates whether the customer has "
-                        "dependents."
-                    )
+        with col4:
+
+            streaming_movies = st.selectbox(
+                "Streaming Movies",
+                CATEGORY_LEVELS["StreamingMovies"],
+                help=(
+                    "Indicates whether the customer subscribes "
+                    "to streaming movies."
                 )
+            )
 
-                paperless = st.selectbox(
-                    "Paperless Billing",
-                    CATEGORY_LEVELS["PaperlessBilling"],
-                    help=(
-                        "Indicates whether the customer uses "
-                        "paperless billing."
-                    )
+
+        # ------------------------------------------------
+        # ACCOUNT & BILLING
+        # ------------------------------------------------
+
+        st.markdown("**Account & Billing**")
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+
+            paperless = st.selectbox(
+                "Paperless Billing",
+                CATEGORY_LEVELS["PaperlessBilling"],
+                help=(
+                    "Indicates whether the customer uses "
+                    "paperless billing."
                 )
+            )
 
+        with col2:
 
-            # ------------------------------------------------
-            # PHONE SERVICES
-            # ------------------------------------------------
-
-            with add_col2:
-
-                st.markdown("**Phone Services**")
-
-                phone = st.selectbox(
-                    "Phone Service",
-                    CATEGORY_LEVELS["PhoneService"],
-                    help="Indicates whether the customer has phone service."
+            total = st.number_input(
+                "Total Charges (RM)",
+                min_value=0.0,
+                value=840.0,
+                step=10.0,
+                help=(
+                    "The customer's accumulated charges."
                 )
-
-                multiple_lines = st.selectbox(
-                    "Multiple Lines",
-                    CATEGORY_LEVELS["MultipleLines"],
-                    help=(
-                        "Indicates whether the customer has "
-                        "multiple phone lines."
-                    )
-                )
+            )
 
 
-            # ------------------------------------------------
-            # ENTERTAINMENT SERVICES
-            # ------------------------------------------------
+    # ====================================================
+    # SUBMIT
+    # ====================================================
 
-            with add_col3:
+    st.divider()
 
-                st.markdown("**Entertainment Services**")
-
-                streaming_tv = st.selectbox(
-                    "Streaming TV",
-                    CATEGORY_LEVELS["StreamingTV"],
-                    help=(
-                        "Indicates whether the customer subscribes "
-                        "to streaming TV."
-                    )
-                )
-
-                streaming_movies = st.selectbox(
-                    "Streaming Movies",
-                    CATEGORY_LEVELS["StreamingMovies"],
-                    help=(
-                        "Indicates whether the customer subscribes "
-                        "to streaming movies."
-                    )
-                )
-
-                total = st.number_input(
-                    "Total Charges (RM)",
-                    min_value=0.0,
-                    value=840.0,
-                    step=10.0,
-                    help="The customer's accumulated charges."
-                )
-
-
-        st.divider()
-
-        submitted = st.form_submit_button(
-            "Analyse Customer",
-            type="primary",
-            use_container_width=True
-        )
+    submitted = st.form_submit_button(
+        "Analyse Customer",
+        type="primary",
+        use_container_width=True
+    )
 
 
     # ========================================================
