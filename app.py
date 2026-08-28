@@ -308,8 +308,9 @@ if page == "🔍 Customer Risk Assessment":
         st.markdown("### Core Customer Information")
 
         st.caption(
-            "These fields provide key customer relationship, service and "
-            "billing information required for the assessment."
+            "Core information is shown first because it combines key customer "
+            "relationship, service and billing details while keeping the assessment "
+            "simple to complete."
         )
 
         col1, col2, col3 = st.columns(3)
@@ -425,8 +426,8 @@ if page == "🔍 Customer Risk Assessment":
         st.markdown("### Additional Customer Information")
 
         st.caption(
-            "Additional fields are available to improve prediction completeness "
-            "while keeping the main assessment focused."
+            "Additional information remains available because these fields are still "
+            "required to maintain the same input structure used during model training."
         )
 
         with st.expander("Show additional information"):
@@ -547,7 +548,7 @@ if page == "🔍 Customer Risk Assessment":
 
         level = risk_level(score)
 
-        priority = retention_priority(level)
+        retention_priority = priority(level)
 
 
         # ====================================================
