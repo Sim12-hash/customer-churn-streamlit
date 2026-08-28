@@ -439,7 +439,7 @@ if page == "🔍 Customer Risk Assessment":
                     "Indicates whether the customer subscribes "
                     "to device protection."
                 )
-
+            )
 
         # ====================================================
         # ADDITIONAL INFORMATION
