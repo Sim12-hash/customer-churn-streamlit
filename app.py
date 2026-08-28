@@ -280,297 +280,480 @@ with st.sidebar:
     st.markdown("**System Status:** 🟢 Active")
     st.caption("Deployment: Streamlit Prototype\n\nModel Engine: Gradient Boosting")
 # ------------------------------------------------------------
-# Page 1: Customer Risk Assessment (UI/UX, Profile & Session State Optimized)
+# Page 1: Customer Risk Assessment
+# User-input based individual churn assessment
 # ------------------------------------------------------------
 
 if page == "🔍 Customer Risk Assessment":
 
     st.subheader("Customer Risk Assessment")
 
-    if "assessment_mode" not in st.session_state:
-        st.session_state["assessment_mode"] = "Existing Customer Lookup"
-
-    mode = st.radio(
-        "Assessment Mode",
-        ["Existing Customer Lookup", "What-if Scenario Analysis"],
-        horizontal=True,
-        key="assessment_mode",
-        label_visibility="collapsed"
+    st.write(
+        "Enter the customer's current information to generate an estimated "
+        "churn risk assessment and retention priority."
     )
+
     st.divider()
 
-    if mode == "Existing Customer Lookup":
+    # --------------------------------------------------------
+    # Customer Input Form
+    # --------------------------------------------------------
 
-        if portfolio is None:
-            st.error("demo_customer_portfolio.csv not found.")
-            st.stop()
+    with st.form("customer_assessment_form"):
 
-        options = portfolio["customerID"].tolist()
-        default_index = 0
-        if st.session_state.get("analyzed_cust_id") in options:
-            default_index = options.index(st.session_state["analyzed_cust_id"])
+        # ====================================================
+        # CORE CUSTOMER INFORMATION
+        # ====================================================
 
-        customer_id = st.selectbox("Select Customer ID", options, index=default_index)
+        st.markdown("### Core Customer Information")
 
-        if st.button("Analyse Customer", type="primary"):
-            st.session_state["analyzed_cust_id"] = customer_id
-            customer = portfolio[portfolio["customerID"] == customer_id].iloc[0].to_dict()
-            st.session_state["selected_customer"] = customer
-            st.session_state["selected_score"], st.session_state["selected_level"] = predict_customer(customer)
-
-        if st.session_state.get("analyzed_cust_id") == customer_id and "selected_customer" in st.session_state:
-            
-            customer = st.session_state["selected_customer"]
-            score = st.session_state["selected_score"]
-            level = st.session_state["selected_level"]
-
-            c1, c2, c3 = st.columns(3)
-            c1.metric("Churn Risk Score", f"{score:.1%}", help="Estimated probability of the customer churning within the next billing cycle.")
-            c2.metric("Risk Level", level, help="Categorized as High (>=70%), Medium (40%-69%), or Low (<40%).")
-            c3.metric("Retention Priority", priority(level), help="Priority 1 requires immediate intervention. Priority 3 indicates normal engagement.")
-
-            st.progress(score)
-
-           # Added Customer ID to the header
-            st.markdown(f"### 👤 Core Customer Profile - ID: **{customer_id}**")
-            p1, p2, p3 = st.columns(3)
-
-            with p1:
-                st.markdown("**Customer Relationship**")
-                st.write(f"**Tenure:** {customer.get('tenure', '-')} months")
-                st.write(f"**Contract:** {customer.get('Contract', '-')}")
-
-            with p2:
-                st.markdown("**Service Usage**")
-                st.write(f"**Internet:** {customer.get('InternetService', '-')}")
-                st.write(f"**Tech Support:** {customer.get('TechSupport', '-')}")
-                st.write(f"**Online Security:** {customer.get('OnlineSecurity', '-')}")
-
-            with p3:
-                st.markdown("**Billing Profile**")
-                st.write(f"**Monthly Charges:** RM{customer.get('MonthlyCharges', '-')}")
-                st.write(f"**Payment Method:** {customer.get('PaymentMethod', '-')}")
-
-            st.markdown("### ⚠️ Customer Profile Indicators")
-            # Strengthened disclaimer
-            st.caption("*These indicators provide additional customer context and are not direct explanations of the machine learning model's prediction.*")
-            indicators = risk_indicators(customer)
-            if indicators:
-                for item in indicators:
-                    st.write(f"🔹 {item}")
-    else:
-
-        st.info(
-            "Adjust selected customer attributes to simulate how the estimated "
-            "churn risk score may change under different customer profile scenarios."
+        st.caption(
+            "These fields provide key customer relationship, service and "
+            "billing information required for the assessment."
         )
 
-        if portfolio is None:
-            st.error("Customer portfolio unavailable.")
-            st.stop()
+        col1, col2, col3 = st.columns(3)
 
-        if "selected_customer" not in st.session_state:
-            st.warning(
-                "Please analyse an existing customer first before running scenario analysis."
-            )
-            st.stop()
-
-
-        base_customer = st.session_state["selected_customer"]
-        current_score = st.session_state["selected_score"]
-        current_level = st.session_state["selected_level"]
-
-
-        # Customer identity
-        st.markdown(
-            f"**Analysing Customer:** `{base_customer['customerID']}`"
-        )
-
-
-        c1, c2 = st.columns(2)
-
-        with c1:
-            st.metric(
-                "Current Churn Risk",
-                f"{current_score:.1%}"
-            )
-
-        with c2:
-            st.metric(
-                "Current Risk Level",
-                current_level
-            )
-
-
-        # Explanation
-        with st.expander("ℹ️ Actionable Levers Explained"):
-
-            st.write(
-                "Only actionable customer attributes are included because "
-                "managers can influence these factors through targeted retention strategies."
-            )
-
-            st.markdown(
-                """
-                **Included variables:**
-
-                🔹 **Contract**  
-                Customer commitment level
-
-                🔹 **Tech Support**  
-                Service experience improvement
-
-                🔹 **Online Security**  
-                Additional service value
-
-                🔹 **Payment Method**  
-                Billing convenience
-                """
-            )
-
-
-        scenario_customer = base_customer.copy()
-
-
-        st.markdown("### Modify Customer Scenario")
-
-
-        col1, col2 = st.columns(2)
-
+        # ----------------------------------------------------
+        # Customer Relationship
+        # ----------------------------------------------------
 
         with col1:
 
-            scenario_customer["Contract"] = st.selectbox(
-                "Update Contract",
+            st.markdown("**Customer Relationship**")
+
+            gender = st.selectbox(
+                "Gender",
+                CATEGORY_LEVELS["gender"],
+                help="Customer gender recorded in the customer profile."
+            )
+
+            senior = st.selectbox(
+                "Senior Citizen",
+                ["No", "Yes"],
+                help="Whether the customer is classified as a senior citizen."
+            )
+
+            tenure = st.number_input(
+                "Tenure (months)",
+                min_value=0,
+                max_value=100,
+                value=12,
+                step=1,
+                help="Number of months the customer has been with the company."
+            )
+
+            contract = st.selectbox(
+                "Contract",
                 CATEGORY_LEVELS["Contract"],
-                index=CATEGORY_LEVELS["Contract"].index(
-                    base_customer["Contract"]
-                )
+                help="Customer's current contract type."
             )
 
-
-            scenario_customer["TechSupport"] = st.selectbox(
-                "Update Tech Support",
-                CATEGORY_LEVELS["TechSupport"],
-                index=CATEGORY_LEVELS["TechSupport"].index(
-                    base_customer["TechSupport"]
-                )
-            )
-
+        # ----------------------------------------------------
+        # Service & Support
+        # ----------------------------------------------------
 
         with col2:
 
-            scenario_customer["OnlineSecurity"] = st.selectbox(
-                "Update Online Security",
+            st.markdown("**Service & Support**")
+
+            internet = st.selectbox(
+                "Internet Service",
+                CATEGORY_LEVELS["InternetService"],
+                help="Type of internet service used by the customer."
+            )
+
+            online_security = st.selectbox(
+                "Online Security",
                 CATEGORY_LEVELS["OnlineSecurity"],
-                index=CATEGORY_LEVELS["OnlineSecurity"].index(
-                    base_customer["OnlineSecurity"]
-                )
+                help="Whether the customer subscribes to online security."
             )
 
+            online_backup = st.selectbox(
+                "Online Backup",
+                CATEGORY_LEVELS["OnlineBackup"],
+                help="Whether the customer subscribes to online backup."
+            )
 
-            scenario_customer["PaymentMethod"] = st.selectbox(
-                "Update Payment Method",
+            tech_support = st.selectbox(
+                "Tech Support",
+                CATEGORY_LEVELS["TechSupport"],
+                help="Whether the customer subscribes to technical support."
+            )
+
+        # ----------------------------------------------------
+        # Billing
+        # ----------------------------------------------------
+
+        with col3:
+
+            st.markdown("**Billing Information**")
+
+            payment = st.selectbox(
+                "Payment Method",
                 CATEGORY_LEVELS["PaymentMethod"],
-                index=CATEGORY_LEVELS["PaymentMethod"].index(
-                    base_customer["PaymentMethod"]
+                help="Customer's current payment method."
+            )
+
+            monthly = st.number_input(
+                "Monthly Charges (RM)",
+                min_value=0.0,
+                value=70.0,
+                step=1.0,
+                help="Customer's current monthly charges."
+            )
+
+            total = st.number_input(
+                "Total Charges (RM)",
+                min_value=0.0,
+                value=840.0,
+                step=10.0,
+                help="Customer's accumulated charges."
+            )
+
+            device_protection = st.selectbox(
+                "Device Protection",
+                CATEGORY_LEVELS["DeviceProtection"],
+                help="Whether the customer subscribes to device protection."
+            )
+
+
+        # ====================================================
+        # ADDITIONAL CUSTOMER INFORMATION
+        # ====================================================
+
+        st.markdown("### Additional Customer Information")
+
+        st.caption(
+            "Additional fields are available to improve prediction completeness "
+            "while keeping the main assessment focused."
+        )
+
+        with st.expander("Show additional information"):
+
+            add_col1, add_col2, add_col3 = st.columns(3)
+
+            # ------------------------------------------------
+            # Customer Background
+            # ------------------------------------------------
+
+            with add_col1:
+
+                st.markdown("**Customer Background**")
+
+                partner = st.selectbox(
+                    "Partner",
+                    CATEGORY_LEVELS["Partner"],
+                    help="Whether the customer has a partner recorded in the profile."
                 )
-            )
 
+                dependents = st.selectbox(
+                    "Dependents",
+                    CATEGORY_LEVELS["Dependents"],
+                    help="Whether the customer has dependents."
+                )
 
+                paperless = st.selectbox(
+                    "Paperless Billing",
+                    CATEGORY_LEVELS["PaperlessBilling"],
+                    help="Whether the customer uses paperless billing."
+                )
 
-        if st.button("Run Simulation", type="primary"):
+            # ------------------------------------------------
+            # Phone & Lines
+            # ------------------------------------------------
 
+            with add_col2:
 
-            # Predict scenario result first
-            scenario_score, scenario_level = predict_customer(
-                scenario_customer
-            )
+                st.markdown("**Phone Services**")
 
+                phone = st.selectbox(
+                    "Phone Service",
+                    CATEGORY_LEVELS["PhoneService"],
+                    help="Whether the customer has phone service."
+                )
 
-            # Show changes
-            st.markdown("### Scenario Changes")
+                multiple_lines = st.selectbox(
+                    "Multiple Lines",
+                    CATEGORY_LEVELS["MultipleLines"],
+                    help="Whether the customer has multiple phone lines."
+                )
 
+            # ------------------------------------------------
+            # Entertainment Services
+            # ------------------------------------------------
 
-            changes = []
+            with add_col3:
 
+                st.markdown("**Entertainment Services**")
 
-            for variable in [
-                "Contract",
-                "TechSupport",
-                "OnlineSecurity",
-                "PaymentMethod"
-            ]:
+                streaming_tv = st.selectbox(
+                    "Streaming TV",
+                    CATEGORY_LEVELS["StreamingTV"],
+                    help="Whether the customer subscribes to streaming TV."
+                )
 
-                if base_customer[variable] != scenario_customer[variable]:
-
-                    changes.append(
-                        f"**{variable}:** "
-                        f"{base_customer[variable]} → "
-                        f"{scenario_customer[variable]}"
-                    )
-
-
-            if changes:
-
-                for change in changes:
-                    st.write("🔹 " + change)
-
-            else:
-
-                st.write(
-                    "No customer profile changes were made."
+                streaming_movies = st.selectbox(
+                    "Streaming Movies",
+                    CATEGORY_LEVELS["StreamingMovies"],
+                    help="Whether the customer subscribes to streaming movies."
                 )
 
 
+        st.divider()
 
-            # Result comparison
+        submitted = st.form_submit_button(
+            "Analyse Customer",
+            type="primary",
+            use_container_width=True
+        )
 
-            st.markdown("### Simulation Results")
+
+    # ========================================================
+    # ANALYSIS RESULT
+    # ========================================================
+
+    if submitted:
+
+        customer = {
+            "gender": gender,
+            "SeniorCitizen": 1 if senior == "Yes" else 0,
+            "Partner": partner,
+            "Dependents": dependents,
+            "tenure": tenure,
+            "PhoneService": phone,
+            "MultipleLines": multiple_lines,
+            "InternetService": internet,
+            "OnlineSecurity": online_security,
+            "OnlineBackup": online_backup,
+            "DeviceProtection": device_protection,
+            "TechSupport": tech_support,
+            "StreamingTV": streaming_tv,
+            "StreamingMovies": streaming_movies,
+            "Contract": contract,
+            "PaperlessBilling": paperless,
+            "PaymentMethod": payment,
+            "MonthlyCharges": monthly,
+            "TotalCharges": total,
+        }
+
+        customer_df = pd.DataFrame([customer])
+
+        encoded_customer = prepare_input(customer_df)
+
+        score = float(
+            model.predict_proba(encoded_customer)[0, 1]
+        )
+
+        level = risk_level(score)
+
+        priority = priority_label(level)
 
 
-            c1, c2, c3 = st.columns(3)
+        # ====================================================
+        # RESULT
+        # ====================================================
+
+        st.divider()
+
+        st.subheader("Customer Churn Assessment")
+
+        metric1, metric2, metric3 = st.columns(3)
+
+        metric1.metric(
+            "Churn Risk Score",
+            f"{score:.1%}",
+            help="Estimated churn risk score generated by the deployed machine learning model."
+        )
+
+        metric2.metric(
+            "Risk Level",
+            level,
+            help="Operational classification based on the selected risk thresholds."
+        )
+
+        metric3.metric(
+            "Retention Priority",
+            priority,
+            help="Priority level used to support retention planning."
+        )
 
 
-            c1.metric(
-                "Original Risk Score",
-                f"{current_score:.1%}"
+        st.progress(
+            min(max(score, 0.0), 1.0)
+        )
+
+
+        # ====================================================
+        # RECOMMENDED ACTION
+        # ====================================================
+
+        st.markdown("### Recommended Retention Action")
+
+        if level == "High":
+
+            st.error(
+                recommended_action(level)
+            )
+
+        elif level == "Medium":
+
+            st.warning(
+                recommended_action(level)
+            )
+
+        else:
+
+            st.success(
+                recommended_action(level)
             )
 
 
-            c2.metric(
-                "Simulated Risk Score",
-                f"{scenario_score:.1%}"
-            )
+        # ====================================================
+        # CUSTOMER PROFILE INDICATORS
+        # ====================================================
+
+        st.markdown("### Customer Risk Profile")
+
+        st.caption(
+            "These profile indicators provide additional customer context. "
+            "They are based on simple business rules and are not direct "
+            "explanations of the machine learning model's prediction."
+        )
+
+        indicators = build_profile_flags(customer)
+
+        for item in indicators:
+
+            st.write(f"• {item}")
 
 
-            c3.metric(
-                "Risk Delta",
-                f"{scenario_score-current_score:+.1%}",
-                delta_color="inverse"
-            )
+        # ====================================================
+        # MODEL SCORE NOTE
+        # ====================================================
+
+        st.info(
+            "The churn risk score is intended for customer prioritisation. "
+            "Because the model was trained using class-balancing methods, "
+            "the score should not automatically be interpreted as a perfectly "
+            "calibrated real-world probability."
+        )
 
 
-            l1, l2 = st.columns(2)
+        # ====================================================
+        # OPTIONAL WHAT-IF SCENARIO
+        # ====================================================
 
+        st.markdown("### Explore a What-if Scenario")
 
-            l1.metric(
-                "Original Risk Level",
-                current_level
-            )
+        st.caption(
+            "You can test selected actionable customer attributes to see "
+            "how the model-estimated churn risk changes under a different scenario."
+        )
 
+        with st.expander("Open What-if Scenario"):
 
-            l2.metric(
-                "Simulated Risk Level",
-                scenario_level
-            )
+            scenario_customer = customer.copy()
 
+            st.markdown("**Actionable Attributes**")
 
             st.caption(
-                "The result shows how the model-estimated risk level changes "
-                "under the simulated scenario. It should not be interpreted "
-                "as a guaranteed causal effect."
+                "Only selected attributes that can reasonably be considered "
+                "business intervention levers are included in the scenario analysis."
             )
+
+            scenario_col1, scenario_col2 = st.columns(2)
+
+            with scenario_col1:
+
+                scenario_customer["Contract"] = st.selectbox(
+                    "Scenario Contract",
+                    CATEGORY_LEVELS["Contract"],
+                    index=CATEGORY_LEVELS["Contract"].index(
+                        customer["Contract"]
+                    ),
+                    key="scenario_contract"
+                )
+
+                scenario_customer["TechSupport"] = st.selectbox(
+                    "Scenario Tech Support",
+                    CATEGORY_LEVELS["TechSupport"],
+                    index=CATEGORY_LEVELS["TechSupport"].index(
+                        customer["TechSupport"]
+                    ),
+                    key="scenario_tech"
+                )
+
+            with scenario_col2:
+
+                scenario_customer["OnlineSecurity"] = st.selectbox(
+                    "Scenario Online Security",
+                    CATEGORY_LEVELS["OnlineSecurity"],
+                    index=CATEGORY_LEVELS["OnlineSecurity"].index(
+                        customer["OnlineSecurity"]
+                    ),
+                    key="scenario_security"
+                )
+
+                scenario_customer["PaymentMethod"] = st.selectbox(
+                    "Scenario Payment Method",
+                    CATEGORY_LEVELS["PaymentMethod"],
+                    index=CATEGORY_LEVELS["PaymentMethod"].index(
+                        customer["PaymentMethod"]
+                    ),
+                    key="scenario_payment"
+                )
+
+
+            if st.button(
+                "Run What-if Scenario",
+                type="secondary",
+                use_container_width=True
+            ):
+
+                scenario_score, scenario_level = predict_customer(
+                    scenario_customer
+                )
+
+                st.markdown("#### Scenario Results")
+
+                result_col1, result_col2, result_col3 = st.columns(3)
+
+                result_col1.metric(
+                    "Original Risk",
+                    f"{score:.1%}"
+                )
+
+                result_col2.metric(
+                    "Scenario Risk",
+                    f"{scenario_score:.1%}"
+                )
+
+                result_col3.metric(
+                    "Risk Change",
+                    f"{scenario_score - score:+.1%}",
+                    delta_color="inverse"
+                )
+
+
+                level_col1, level_col2 = st.columns(2)
+
+                level_col1.metric(
+                    "Original Risk Level",
+                    level
+                )
+
+                level_col2.metric(
+                    "Scenario Risk Level",
+                    scenario_level
+                )
+
+
+                st.caption(
+                    "The scenario result shows how the model-estimated risk "
+                    "changes when the selected customer attributes are modified. "
+                    "It should not be interpreted as a guaranteed causal effect."
+                )
             
 # ------------------------------------------------------------
 # Page 2: Retention Management Dashboard
