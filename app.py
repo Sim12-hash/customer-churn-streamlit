@@ -509,7 +509,10 @@ if page == "🔍 Customer Risk Assessment":
             use_container_width=True
         )
 
-
+    # Store the latest What-if result
+    if "scenario_result" not in st.session_state:
+        st.session_state["scenario_result"] = None
+    
     # ========================================================
     # ANALYSIS RESULT
     # ========================================================
@@ -706,15 +709,12 @@ if page == "🔍 Customer Risk Assessment":
                 )
 
 
-            if st.button(
-                "Run What-if Scenario",
-                type="secondary",
-                use_container_width=True
-            ):
+            if st.session_state["scenario_result"] is not None:
 
-                scenario_score, scenario_level = predict_customer(
-                    scenario_customer
-                )
+                scenario_result = st.session_state["scenario_result"]
+
+                scenario_score = scenario_result["score"]
+                scenario_level = scenario_result["level"]
 
                 st.markdown("#### Scenario Results")
 
@@ -736,7 +736,6 @@ if page == "🔍 Customer Risk Assessment":
                     delta_color="inverse"
                 )
 
-
                 level_col1, level_col2 = st.columns(2)
 
                 level_col1.metric(
@@ -749,11 +748,10 @@ if page == "🔍 Customer Risk Assessment":
                     scenario_level
                 )
 
-
                 st.caption(
-                    "The scenario result shows how the model-estimated risk "
-                    "changes when the selected customer attributes are modified. "
-                    "It should not be interpreted as a guaranteed causal effect."
+                    "The scenario result shows how the model-estimated risk changes "
+                    "when selected customer attributes are modified. It should not "
+                    "be interpreted as a guaranteed causal effect."
                 )
             
 # ------------------------------------------------------------
