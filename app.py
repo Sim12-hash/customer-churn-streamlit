@@ -1168,15 +1168,6 @@ elif page == "📊 Retention Management Dashboard":
                 color_discrete_map={"High": "#EF553B", "Medium": "#66C2A5", "Low": "#8DA0CB"}
             )
             st.plotly_chart(fig2, use_container_width=True)
-            
-            st.caption("Shows how tenure, charges, and predicted churn risk relate to one another numerically.")
-            corr_cols = ["tenure", "MonthlyCharges", "TotalCharges", "ChurnRiskScore"]
-            corr_matrix = results[corr_cols].corr().round(2)
-            fig2b = px.imshow(
-                corr_matrix, text_auto=True, color_continuous_scale="RdBu_r", zmin=-1, zmax=1,
-                title="Correlation Between Numeric Features and Predicted Churn Risk"
-            )
-            st.plotly_chart(fig2b, use_container_width=True)
 
         with tab4:
             st.caption("Helps identify customer lifecycle stages requiring prioritized retention attention.")
