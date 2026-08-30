@@ -1148,6 +1148,16 @@ elif page == "📊 Retention Management Dashboard":
             fig1.update_layout(yaxis_title="Customer Count")
             st.plotly_chart(fig1, use_container_width=True)
 
+            st.caption("Helps assess whether billing method is associated with different estimated churn risk groups.")
+            fig1b = px.histogram(
+                results, x="RiskLevel", color="PaymentMethod", barmode="group",
+                category_orders={"RiskLevel": ["High", "Medium", "Low"]},
+                title="Pattern Insight: Electronic Check Users Show Higher Estimated Churn Risk",
+                color_discrete_sequence=px.colors.qualitative.Set2
+            )
+            fig1b.update_layout(yaxis_title="Customer Count")
+            st.plotly_chart(fig1b, use_container_width=True)
+
         with tab2:
             st.caption("Helps evaluate if financial burden correlates with the model's churn risk predictions.")
             fig2 = px.box(
