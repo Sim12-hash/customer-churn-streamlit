@@ -1135,7 +1135,7 @@ elif page == "📊 Retention Management Dashboard":
         st.divider()
         st.markdown("### 📈 Customer Journey & Business Patterns")
         
-        tab1, tab2, tab3, tab4, tab5 = st.tabs(["📋 Contract Patterns", "🧾 Billing Patterns", "💰 Financial Patterns", "⏳ Tenure Patterns"])
+        tab1, tab2, tab3, tab4, tab5 = st.tabs(["📋 Contract Patterns", "🧾 Billing Patterns", "💰 Financial Patterns", "⏳ Tenure Patterns", "Hello"])
 
         with tab1:
             st.caption("Helps identify whether customer commitment level is associated with different estimated churn risk groups.")
@@ -1189,6 +1189,9 @@ elif page == "📊 Retention Management Dashboard":
             fig3.add_hline(y=0.70, line_dash="dash", line_color="red", annotation_text="High Risk Threshold")
             st.plotly_chart(fig3, use_container_width=True)
 
+        with tab5:
+
+            
         st.divider()
         st.markdown("### 🎯 Priority Intervention Roster")
         
