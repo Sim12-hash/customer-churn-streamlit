@@ -1135,7 +1135,7 @@ elif page == "📊 Retention Management Dashboard":
         st.divider()
         st.markdown("### 📈 Customer Journey & Business Patterns")
         
-        tab1, tab2, tab3 = st.tabs(["📋 Contract Patterns", "💰 Financial Patterns", "⏳ Tenure Patterns"])
+        tab1, tab2, tab3, tab4, tab5 = st.tabs(["📋 Contract Patterns", "🧾 Billing Patterns", "💰 Financial Patterns", "⏳ Tenure Patterns"])
 
         with tab1:
             st.caption("Helps identify whether customer commitment level is associated with different estimated churn risk groups.")
@@ -1147,7 +1147,8 @@ elif page == "📊 Retention Management Dashboard":
             )
             fig1.update_layout(yaxis_title="Customer Count")
             st.plotly_chart(fig1, use_container_width=True)
-
+            
+        with tab2:
             st.caption("Helps assess whether billing method is associated with different estimated churn risk groups.")
             fig1b = px.histogram(
                 results, x="RiskLevel", color="PaymentMethod", barmode="group",
@@ -1158,7 +1159,7 @@ elif page == "📊 Retention Management Dashboard":
             fig1b.update_layout(yaxis_title="Customer Count")
             st.plotly_chart(fig1b, use_container_width=True)
 
-        with tab2:
+        with tab3:
             st.caption("Helps evaluate if financial burden correlates with the model's churn risk predictions.")
             fig2 = px.box(
                 results, x="RiskLevel", y="MonthlyCharges", color="RiskLevel",
@@ -1167,8 +1168,16 @@ elif page == "📊 Retention Management Dashboard":
                 color_discrete_map={"High": "#EF553B", "Medium": "#66C2A5", "Low": "#8DA0CB"}
             )
             st.plotly_chart(fig2, use_container_width=True)
+            st.caption("Shows how tenure, charges, and predicted churn risk relate to one another numerically.")
+            corr_cols = ["tenure", "MonthlyCharges", "TotalCharges", "ChurnRiskScore"]
+            corr_matrix = results[corr_cols].corr().round(2)
+            fig2b = px.imshow(
+                corr_matrix, text_auto=True, color_continuous_scale="RdBu_r", zmin=-1, zmax=1,
+                title="Correlation Between Numeric Features and Predicted Churn Risk"
+            )
+            st.plotly_chart(fig2b, use_container_width=True)
 
-        with tab3:
+        with tab4:
             st.caption("Helps identify customer lifecycle stages requiring prioritized retention attention.")
             fig3 = px.scatter(
                 results, x="tenure", y="ChurnRiskScore", color="RiskLevel", size="MonthlyCharges",
