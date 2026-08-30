@@ -1168,6 +1168,7 @@ elif page == "📊 Retention Management Dashboard":
                 color_discrete_map={"High": "#EF553B", "Medium": "#66C2A5", "Low": "#8DA0CB"}
             )
             st.plotly_chart(fig2, use_container_width=True)
+            
             st.caption("Shows how tenure, charges, and predicted churn risk relate to one another numerically.")
             corr_cols = ["tenure", "MonthlyCharges", "TotalCharges", "ChurnRiskScore"]
             corr_matrix = results[corr_cols].corr().round(2)
@@ -1190,7 +1191,15 @@ elif page == "📊 Retention Management Dashboard":
             st.plotly_chart(fig3, use_container_width=True)
 
         with tab5:
-
+            st.caption("Helps identify whether service type is associated with different estimated churn risk groups.")
+            fig3b = px.histogram(
+                results, x="RiskLevel", color="InternetService", barmode="group",
+                category_orders={"RiskLevel": ["High", "Medium", "Low"]},
+                title="Pattern Insight: Fiber Optic Customers Show Higher Estimated Churn Risk",
+                color_discrete_sequence=px.colors.qualitative.Pastel1
+            )
+            fig3b.update_layout(yaxis_title="Customer Count")
+            st.plotly_chart(fig3b, use_container_width=True)
             
         st.divider()
         st.markdown("### 🎯 Priority Intervention Roster")
